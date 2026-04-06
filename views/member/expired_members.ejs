@@ -1,0 +1,208 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+  <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+    <div class="d-flex">
+      <div class="breadcrumb">
+        <a href="/" class="breadcrumb-item">
+          <i class="icon-home2 mr-2"></i> Expired Member
+        </a>
+        <span class="breadcrumb-item active">Expired Member List</span>
+      </div>
+      <a href="#" class="header-elements-toggle text-default d-md-none">
+        <i class="icon-more"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Content area -->
+<div class="content">
+  <div class="card">
+    <div class="card-header header-elements-inline">
+      <h5 class="card-title">Expired Member List</h5>
+      <div class="d-flex align-items-center" style="gap: 10px;">
+        <form id="expired-bulk-delete-form" action="/members/expired_bulk_delete" method="post" class="m-0">
+          <input type="hidden" name="selected_ids" id="expired-selected-ids">
+          <button type="submit" id="expired-bulk-delete-btn" class="btn btn-danger" disabled>
+            Delete Selected
+          </button>
+        </form>
+        <form action="/members/expired_excel" method="post" name="expiredForm" class="m-0">
+          <button
+            id="export_expired_user"
+            type="submit"
+            class="btn btn-success"
+          >
+            Export Expired Members
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <table
+      id="list"
+      class="table datatable-basic table-bordered table-striped table-hover"
+    >
+      <thead>
+        <tr>
+          <th style="width: 50px;">
+            <input type="checkbox" id="select-all-expired-members">
+          </th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Session</th>
+          <th>Last Payment</th>
+          <th>Expire Date</th>
+          <th>Status</th>
+          <th style="width: 120px;">Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function () {
+    function updateBulkDeleteState() {
+      var selectedIds = $('.expired-member-checkbox:checked')
+        .map(function () {
+          return $(this).val();
+        })
+        .get();
+
+      $('#expired-selected-ids').val(JSON.stringify(selectedIds));
+      $('#expired-bulk-delete-btn').prop('disabled', selectedIds.length === 0);
+    }
+
+    function dataLoad() {
+      $("#list").DataTable({
+        processing: true,
+        serverSide: true,
+        ordering: false,
+        searching: true,
+        destroy: true,
+        pageLength: 50,
+        language: {
+          searchPlaceholder: "Search by name, phone or email",
+        },
+        ajax: {
+          url: "/members/expired_data_list",
+          type: "POST",
+          datatype: "json",
+          error: function () {
+            alert("Failed to fetch data. Please try again.");
+          },
+        },
+        columns: [
+          {
+            data: "id",
+            orderable: false,
+            searchable: false,
+            render: function (data) {
+              return '<input type="checkbox" class="expired-member-checkbox" value="' + data + '">';
+            },
+          },
+          { data: "name" },
+          { data: "phone_number" },
+          { data: "email" },
+          { data: "session" },
+          { data: "last_payment_date" },
+          { data: "expire_date" },
+          { data: null },
+          {
+            data: "id",
+            orderable: false,
+            searchable: false,
+            render: function (data) {
+              return '<button class="btn btn-sm btn-danger expired-delete-btn" data-id="' + data + '">Delete</button>';
+            },
+          },
+        ],
+        createdRow: function (row, data) {
+          function formatDate(dateStr) {
+            if (!dateStr) return "N/A";
+            const parts = dateStr.split("-");
+            if (parts.length !== 3) return "N/A";
+            return parts[2] + "-" + parts[1] + "-" + parts[0];
+          }
+
+          const formattedLastPayment = formatDate(data.last_payment_date);
+          const formattedExpireDate = formatDate(data.expire_date);
+
+          $("td:eq(5)", row).html(formattedLastPayment);
+          $("td:eq(6)", row).html(formattedExpireDate);
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split("-");
+            if (parts.length !== 3) return null;
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+          }
+
+          const expireDate = parseDate(data.expire_date);
+          const statusBadge =
+            !expireDate
+              ? '<span class="badge badge-secondary">Not Pay</span>'
+              : expireDate < today
+              ? '<span class="badge badge-danger">Expired</span>'
+              : '<span class="badge badge-success">Paid</span>';
+
+          $("td:eq(7)", row).html(statusBadge);
+        },
+        drawCallback: function () {
+          $('#select-all-expired-members').prop('checked', false);
+          updateBulkDeleteState();
+        },
+      });
+    }
+
+    dataLoad();
+
+    $('#list').on('change', '.expired-member-checkbox', function () {
+      var totalVisible = $('.expired-member-checkbox').length;
+      var checkedVisible = $('.expired-member-checkbox:checked').length;
+      $('#select-all-expired-members').prop('checked', totalVisible > 0 && totalVisible === checkedVisible);
+      updateBulkDeleteState();
+    });
+
+    $('#select-all-expired-members').on('change', function () {
+      $('.expired-member-checkbox').prop('checked', $(this).is(':checked'));
+      updateBulkDeleteState();
+    });
+
+    $('#expired-bulk-delete-form').on('submit', function () {
+      updateBulkDeleteState();
+      if (!$('#expired-selected-ids').val() || $('#expired-selected-ids').val() === '[]') {
+        alert('Please select at least one expired member.');
+        return false;
+      }
+      return confirm('Delete selected expired members permanently?');
+    });
+
+    $('#list').on('click', '.expired-delete-btn', function () {
+      var id = $(this).data('id');
+      if (!confirm('Delete this expired member permanently?')) return;
+
+      $.ajax({
+        type: "POST",
+        url: "/members/expired_delete",
+        data: { id: id },
+        success: function (res) {
+          if (res && res.success) {
+            $('#list').DataTable().ajax.reload(null, false);
+          } else {
+            alert(res?.message || "Delete failed.");
+          }
+        },
+        error: function () {
+          alert("Delete failed.");
+        },
+      });
+    });
+  });
+</script>

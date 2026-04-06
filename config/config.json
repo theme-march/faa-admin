@@ -1,0 +1,27 @@
+{
+  "development": {
+    "username": "root",
+    "password": "p^L671!!Ph",
+    "database": "faaw_db",
+    "host": "139.162.11.50",
+    "port": "3306",
+    "dialect": "mysql",
+    "timezone": "+06:00"
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": "p^L671!!Ph",
+    "database": "faaw_db",
+    "host": "174.138.171.172",
+    "port": "3306",
+    "dialect": "mysql",
+    "timezone": "+06:00"
+  }
+}

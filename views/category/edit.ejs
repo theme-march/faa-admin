@@ -1,0 +1,111 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/category" class="breadcrumb-item"> Category Menu</a>
+                <span class="breadcrumb-item active">Edit Category</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Edit Category</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/category/edit/<%=id%>" method="post" name="form1">
+                        <input type="hidden" name="id" value="<%- id %>">
+                        <input type="hidden" name="category_title" value="<%- category_title || '' %>">
+
+                        <div class="form-group">
+                            <label>Category Name: </label>
+                            <input type="text" name="category_name" value="<%= category_name %>" class="form-control" placeholder="Category Name">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='category_name').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Membership Number Prefix: </label>
+                            <input type="text" name="membership_number_prefix" value="<%= membership_number_prefix %>" class="form-control" placeholder="Ex: GM, LM, SM">
+                            <small class="form-text text-muted">This prefix will be used for auto membership number generation.</small>
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='membership_number_prefix').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Membership Fee: </label>
+                            <input type="text" name="category_price" value="<%= category_price %>" class="form-control" placeholder="Category Price">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='category_price').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Membership Type: </label>
+                            <select id="membership_type" name="membership_type" class="form-control select-fixed-single" data-fouc>
+                                <option value="time_limited" <%= membership_type === 'time_limited' ? 'selected' : ''%>>Time Limited</option>
+                                <option value="lifetime" <%= membership_type === 'lifetime' ? 'selected' : ''%>>Lifetime</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="duration_group">
+                            <label>Membership Duration (Days): </label>
+                            <input type="number" min="1" name="membership_duration_days" value="<%= membership_duration_days %>" class="form-control" placeholder="Ex: 365">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status: </label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <option value="1" <%= status === 1 ? 'selected' : ''%>>Published</option>
+                                <option value="0" <%= status === 0 ? 'selected' : ''%>>Unpublished</option>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Edit
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->
+
+<script>
+    (function () {
+        var membershipType = document.getElementById("membership_type");
+        var durationGroup = document.getElementById("duration_group");
+        if (!membershipType || !durationGroup) return;
+
+        function syncDurationVisibility() {
+            durationGroup.style.display = membershipType.value === "lifetime" ? "none" : "block";
+        }
+
+        membershipType.addEventListener("change", syncDurationVisibility);
+        syncDurationVisibility();
+    })();
+</script>

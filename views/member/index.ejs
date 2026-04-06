@@ -1,0 +1,446 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Member</a>
+                <span class="breadcrumb-item active">Member List</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+
+    <!-- Style combinations -->
+    <div class="card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Member list</h5>
+        </div>
+
+        <div class="card-body">
+
+            <div class="d-flex member-toolbar">
+                <button onclick="location.href='/member/add'" type="button" class="btn btn-primary">
+                    <i class="icon-plus2  mr-2"></i>
+                    Add Member
+                </button>
+
+                <form action="/members/excel_report" method="post" name="form1" class="member-toolbar-form">
+                    <button id="export_user" onclick="location.href='#'" type="submit" class="btn btn-primary">
+                        Export User
+                    </button>
+                </form>
+
+                <form id="uploadForm" enctype="multipart/form-data" class="member-upload-form">
+                    <div class="d-flex member-upload-row">
+                        <input type="file" id="fileInput" name="file" class="form-control member-file-input" accept=".xls,.xlsx">
+                        <button id="import_user" type="button" class="btn btn-primary">
+                            Import User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body pt-0">
+            <div class="row">
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <label for="member_type_filter" class="mb-1 font-weight-semibold">Member Type</label>
+                    <select id="member_type_filter" class="form-control">
+                        <option value="all">All</option>
+                        <% if (data.memberTypes && data.memberTypes.length) { %>
+                            <% data.memberTypes.forEach(function (item) { %>
+                                <option value="<%= item.id %>" <%= String(data.categoryid || '') === String(item.id) ? 'selected' : '' %>>
+                                    <%= item.category_name %>
+                                </option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                </div>
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <label for="transaction_status_filter" class="mb-1 font-weight-semibold">Transaction Status</label>
+                    <select id="transaction_status_filter" class="form-control">
+                        <option value="all">All</option>
+                        <option value="pay">Pay</option>
+                        <option value="not_pay">Not Pay</option>
+                        <option value="cash_pending">Cash Pending</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-mobile-wrap">
+            <table id="list" class="table datatable-basic table-bordered table-striped table-hover">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone Number</th>
+                    <th>Email</th>
+                    <th>Session</th>
+                    <th>Type</th>
+                    <th class="text-center">Payment</th>
+                    <th>Approval</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+    </div>
+    <!-- /style combinations -->
+
+
+
+</div>
+<!-- /content area -->
+
+<input type="hidden" id="categoryid" value="<%=data.categoryid%>">
+
+<script>
+    $(document).ready(function() {
+
+        $( "#import_user" ).on( "click", function() {
+            const formData = new FormData();
+            const fileInput = document.getElementById('fileInput');
+
+            if(fileInput.files.length !== 0){
+                formData.append('file', fileInput.files[0]);
+
+                $.ajax({
+                    url: '/members/import_excel',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if(response.success){
+                            alert('File uploaded successfully');
+                            console.log(response);
+                            window.location.href = "/members";
+                        }
+
+                    },
+                    error: function(xhr, status, error) {
+                        alert('Error uploading file');
+                        console.error(error);
+                    }
+                });
+            }else{
+                alert("Please choose excel file!")
+            }
+
+        });
+
+        function dataLoad() {
+            $('#list').DataTable( {
+                "processing": true,
+                "serverSide": true,
+                "ordering": false,
+                "search": true,
+                "destroy": true,
+                "pageLength": 50,
+                "language": {
+                    "searchPlaceholder": "Filter by title"
+                },
+                "ajax": {
+                    "url": "/members/data_list",
+                    "type": "POST",
+                    "datatype": "json",
+                    "data": function (d) {
+                        d.categoryid = $('#categoryid').val();
+                        d.member_type = $('#member_type_filter').val();
+                        d.transaction_status = $('#transaction_status_filter').val();
+                    }
+                },
+                "createdRow": function( row, data, dataIndex ) {
+                    if ( data.is_pay === 1 ) {
+                        $('td:eq(5)', row).html('<span class="badge badge-success">Pay</span>');
+                    }else{
+                        $('td:eq(5)', row).html('<span class="badge badge-secondary">Not Pay</span>');
+                    }
+                    if ( data.admin_approval === 1 ) {
+                        $('td:eq(6)', row).html('<span class="badge badge-success">Approved</span>');
+                    }else{
+                        $('td:eq(6)', row).html('<span class="badge badge-secondary">Not Approved</span>');
+                    }
+                },
+                "columns": [
+                    { "data": "name" },
+                    { "data": "phone_number" },
+                    { "data": "email" },
+                    { "data": "session" },
+                    { "data": "category_name" },
+                    { "data": "is_pay" },
+                    { "data": "admin_approval" },
+                    { "data": "action" },
+                ]
+            });
+        }
+
+        $('#categoryid').val(
+            $('#member_type_filter').val() !== 'all' ? $('#member_type_filter').val() : ''
+        );
+
+        dataLoad();
+
+        $('#member_type_filter, #transaction_status_filter').on('change', function () {
+            $('#categoryid').val(
+                $('#member_type_filter').val() !== 'all' ? $('#member_type_filter').val() : ''
+            );
+            dataLoad();
+        });
+
+        // Custom bootbox dialog with form
+        $("#list").on('click', '#delete', function () {
+            var delid = $(this).attr('data-delete-id');
+            bootbox.confirm({
+                title: 'Delete',
+                message: 'Do you want to delete?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/member/del",
+                            data: { del_id: delid },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/members";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Delete Faild!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+        $("#list").on('click', '#approve', function () {
+            var approveID = $(this).attr('data-approve-id');
+            bootbox.confirm({
+                title: 'Approve',
+                message: 'Do you want to approve?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/member/approve",
+                            data: { approve_id: approveID },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/members";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Delete Faild!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+        $("#list").on('click', '#not_approve', function () {
+            var approveID = $(this).attr('data-approve-id');
+            bootbox.confirm({
+                title: 'Approve Cancel',
+                message: 'Do you want to approve cancel ?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/member/not_approve",
+                            data: { approve_id: approveID },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/members";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Delete Faild!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });        $("#list").on('click', '#mark_cash_received', function () {
+            var memberID = $(this).attr('data-member-id');
+            bootbox.confirm({
+                title: 'Mark Cash Received',
+                message: 'Do you want to mark this member as cash received?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/member/mark_cash_received",
+                            data: { member_id: memberID },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/members";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Update Failed!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+        $("#list").on('click', '#mark_paid', function () {
+            var memberID = $(this).attr('data-member-id');
+            bootbox.confirm({
+                title: 'Mark as Paid',
+                message: 'Do you want to mark this member as paid?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/member/mark_paid",
+                            data: { member_id: memberID },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/members";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Update Failed!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+        $("#list").on('click', '#mark_not_paid', function () {
+            var memberID = $(this).attr('data-member-id');
+            bootbox.confirm({
+                title: 'Mark as Not Paid',
+                message: 'Do you want to mark this member as not paid?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/member/mark_not_paid",
+                            data: { member_id: memberID },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/members";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Update Failed!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+
+        $("#filter").click(function(){
+            dataLoad();
+        });
+
+
+    });
+</script>
+
+
+
+
+
+
+
+

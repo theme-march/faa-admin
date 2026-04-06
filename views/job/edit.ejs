@@ -1,0 +1,135 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/job" class="breadcrumb-item"> Job</a>
+                <span class="breadcrumb-item active">Edit</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Edit</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/job/edit/<%=id%>" method="post" enctype="multipart/form-data" name="form1">
+                        <input type="hidden" name="id" value="<%= id %>" />
+
+                        <div class="form-group">
+                            <label>Job Title: </label>
+                            <input type="text" name="job_title" value="<%= job_title %>" id="job_title" class="form-control" placeholder="Job Title">
+                        </div>
+                        <div class="form-group">
+                            <label>Job Details: </label>
+                            <textarea id="my-expressjs-tinymce-app" name="job_details"><%=job_details%></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Experience: </label>
+                            <input type="text" name="experience" value="<%= experience %>" id="experience" class="form-control" placeholder="Experience">
+                        </div>
+                        <div class="form-group">
+                            <label>Company Name: </label>
+                            <input type="text" name="company" value="<%= company %>" class="form-control" placeholder="Company name">
+                        </div>
+                        <div class="form-group">
+                            <label>Location: </label>
+                            <input type="text" name="location" value="<%= location %>" class="form-control" placeholder="Location">
+                        </div>
+                        <div class="form-group">
+                            <label>Posting date: </label>
+                            <input type="date" name="post_date" value="<%= post_date %>" class="form-control" placeholder="Posting date">
+                        </div>
+                        <div class="form-group">
+                            <label>Deadline: </label>
+                            <input type="date" name="deadline" value="<%= deadline %>" class="form-control" placeholder="Deadline">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Link: </label>
+                            <input type="text" name="link" value="<%= link %>" class="form-control" placeholder="Link">
+                        </div>
+
+
+
+                        <div class="form-group">
+                            <label>Company Logo: </label>
+                            <div>
+                                <%if(company_logo===""){%>
+                                    Previous Image not available
+                                <%}else{%>
+                                    <img width="100%" src="/job/<%=company_logo%>"/>
+                                <%}%>
+                            </div>
+                            <input name="ff" type="file" class="form-input-styled" accept="image/*" data-fouc>
+                            <span class="form-text text-muted">Accepted formats: png, jpg. Max file size 3Mb</span>
+                        </div>
+                        <div class="form-group">
+                            <label>PDF File: </label>
+                            <div>
+                                <%if(file===""){%>
+                                    Previous pdf not available
+                                <%}else{%>
+                                    <a href="/job/<%=file%>">Open Pdf</a>
+                                <%}%>
+                            </div>
+                            <input name="ff" type="file" class="form-input-styled" accept="application/pdf" data-fouc>
+                            <span class="form-text text-muted">Accepted formats: pdf. Max file size 2Mb</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status: </label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <% if (status == '0'){%>
+                                    <option value="1">Published</option>
+                                    <option value="0" selected>Unpublished</option>
+                                <%}else if(status == '1'){%>
+                                    <option value="1" selected>Published</option>
+                                    <option value="0">Unpublished</option>
+                                <%}else{%>
+                                    <option value="1" selected>Published</option>
+                                    <option value="0">Unpublished</option>
+                                <%}%>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Update
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->

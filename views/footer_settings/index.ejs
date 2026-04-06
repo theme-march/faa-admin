@@ -1,0 +1,165 @@
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Footer Settings</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="row">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Website Footer Settings</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/footer-settings" method="post" enctype="multipart/form-data">
+                        <h6 class="font-weight-semibold">Footer Left</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Brand Title</label>
+                                    <input type="text" name="brandTitle" class="form-control" value="<%= footerSettings.brandTitle %>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Facebook URL</label>
+                                    <input type="text" name="facebookUrl" class="form-control" value="<%= footerSettings.facebookUrl %>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Upload Footer Logo (optional)</label>
+                            <input type="file" name="footerLogoFile" class="form-control" accept=".png,.jpg,.jpeg,.svg,.webp">
+                            <small class="text-muted">If no file is uploaded, the current/default footer logo will remain.</small>
+                            <% if (footerSettings.footerLogoUrl) { %>
+                                <div class="mt-2">
+                                    <img src="<%= footerSettings.footerLogoUrl %>" alt="Footer Logo Preview" style="max-height: 60px; width: auto;">
+                                </div>
+                            <% } %>
+                        </div>
+                        <div class="form-group">
+                            <label>Brand Description</label>
+                            <textarea name="brandDescription" class="form-control" rows="3"><%= footerSettings.brandDescription %></textarea>
+                        </div>
+
+                        <h6 class="font-weight-semibold mt-3">Footer Right</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Useful Heading</label>
+                                    <input type="text" name="usefulHeading" class="form-control" value="<%= footerSettings.usefulHeading %>">
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label>Useful Subtitle</label>
+                                    <input type="text" name="usefulSubtitle" class="form-control" value="<%= footerSettings.usefulSubtitle %>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Useful Subtitle URL</label>
+                            <input type="text" name="usefulSubtitleUrl" class="form-control" value="<%= footerSettings.usefulSubtitleUrl %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Help Title</label>
+                            <input type="text" name="helpTitle" class="form-control" value="<%= footerSettings.helpTitle %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Footer Phone Numbers</label>
+                            <div id="footer-phones-wrapper">
+                                <% (footerSettings.phones || []).forEach(function(phone, idx){ %>
+                                    <div class="input-group mb-2 footer-phone-row">
+                                        <input type="text" name="footerPhones" class="form-control" value="<%= phone %>" placeholder="+880 1XXX-XXXXXX">
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-outline-danger remove-footer-phone-btn" <%= idx === 0 ? 'disabled' : '' %>>
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-footer-phone-btn">
+                                <i class="icon-plus22 mr-1"></i> Add More Phone
+                            </button>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">
+                                Update <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var wrapper = document.getElementById('footer-phones-wrapper');
+        var addBtn = document.getElementById('add-footer-phone-btn');
+        if (!wrapper || !addBtn) return;
+
+        function refreshRemoveState() {
+            var rows = wrapper.querySelectorAll('.footer-phone-row');
+            rows.forEach(function (row, index) {
+                var btn = row.querySelector('.remove-footer-phone-btn');
+                if (btn) btn.disabled = rows.length === 1 && index === 0;
+            });
+        }
+
+        function makeRow(value) {
+            var row = document.createElement('div');
+            row.className = 'input-group mb-2 footer-phone-row';
+            row.innerHTML =
+                '<input type="text" name="footerPhones" class="form-control" placeholder="+880 1XXX-XXXXXX">' +
+                '<div class="input-group-append">' +
+                '  <button type="button" class="btn btn-outline-danger remove-footer-phone-btn">Remove</button>' +
+                '</div>';
+            row.querySelector('input').value = value || '';
+            return row;
+        }
+
+        addBtn.addEventListener('click', function () {
+            wrapper.appendChild(makeRow(''));
+            refreshRemoveState();
+        });
+
+        wrapper.addEventListener('click', function (event) {
+            if (!event.target.classList.contains('remove-footer-phone-btn')) return;
+            var row = event.target.closest('.footer-phone-row');
+            if (row) row.remove();
+            if (!wrapper.querySelector('.footer-phone-row')) {
+                wrapper.appendChild(makeRow(''));
+            }
+            refreshRemoveState();
+        });
+
+        if (!wrapper.querySelector('.footer-phone-row')) {
+            wrapper.appendChild(makeRow(''));
+        }
+        refreshRemoveState();
+    })();
+</script>

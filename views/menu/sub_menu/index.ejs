@@ -1,0 +1,140 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/menu" class="breadcrumb-item"> Menu</a>
+                <span class="breadcrumb-item active">Sub Menu</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+
+    <!-- Style combinations -->
+    <div class="card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Sub Menu list</h5>
+        </div>
+
+        <div class="card-body">
+            <button onclick="location.href='/menu/sub_menu/add?parent_id=<%=parent_id%>'" type="button" class="btn btn-primary">
+                <i class="icon-plus2  mr-2"></i>
+                Sub Menu Add
+            </button>
+        </div>
+
+        <table id="list" class="table datatable-basic table-bordered table-striped table-hover">
+            <thead>
+            <tr>
+                <th>Sub Menu Name</th>
+                <th>Sub Menu Url</th>
+                <th>Order By</th>
+                <th>Status</th>
+                <th class="text-center">Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+    <!-- /style combinations -->
+
+    <input hidden="hidden" id="parent_id" value="<%=parent_id%>">
+
+
+</div>
+<!-- /content area -->
+
+
+<script>
+    $(document).ready(function() {
+
+        function dataLoad() {
+            $('#list').DataTable( {
+                "processing": true,
+                "serverSide": true,
+                "ordering": false,
+                "search": true,
+                "destroy": true,
+                "pageLength": 50,
+                "language": {
+                    "searchPlaceholder": "Filter by sub menu name"
+                },
+                "ajax": {
+                    "url": "/menu/sub_menu/data_list/?parent_id="+$('#parent_id').val(),
+                    "type": "POST",
+                    "datatype": "json",
+                },
+                "createdRow": function( row, data, dataIndex ) {
+                    if ( data.status === 1 ) {
+                        $('td:eq(3)', row).html('<span class="badge badge-success">Published</span>');
+                    }else{
+                        $('td:eq(3)', row).html('<span class="badge badge-secondary">Unpublished</span>');
+                    }
+                },
+                "columns": [
+                    { "data": "menu_name" },
+                    { "data": "menu_url" },
+                    { "data": "order_by" },
+                    { "data": "status" },
+                    { "data": "action" },
+                ]
+            });
+        }
+
+        dataLoad();
+
+        // Custom bootbox dialog with form
+        $("#list").on('click', '#delete', function () {
+            var delid = $(this).attr('data-delete-id');
+            bootbox.confirm({
+                title: 'Delete',
+                message: 'Do you want to delete?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/menu/sub_menu/del",
+                            data: { del_id: delid },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/menu/sub_menu?parent_id="+$('#parent_id').val();
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Delete Faild!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+
+        $("#filter").click(function(){
+            dataLoad();
+        });
+
+
+    });
+</script>

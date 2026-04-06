@@ -1,0 +1,70 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/batch_session/" class="breadcrumb-item"> Batch/Session List</a>
+                <span class="breadcrumb-item active">Add Batch/Session</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Add Batch/Session</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/batch_session/add" method="post" name="form1">
+
+                        <div class="form-group">
+                            <label>Batch/Session Name: </label>
+                            <input type="text" name="batch_session_name" value="<%= batch_session_name %>" class="form-control" placeholder="Batch/Session Name">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='batch_session_name').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Status: </label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <option value="1" <%= status === 1 ? 'selected' : ''%>>Published</option>
+                                <option value="0" <%= status === 0 ? 'selected' : ''%>>Unpublished</option>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Add
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->

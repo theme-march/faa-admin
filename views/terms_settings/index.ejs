@@ -1,0 +1,133 @@
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Terms Settings</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card terms-settings-card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Terms, Privacy & Refund Settings</h5>
+        </div>
+
+        <% if (messages.error) { %>
+            <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+            </div>
+        <% } %>
+
+        <% if (messages.success) { %>
+            <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+            </div>
+        <% } %>
+
+        <div class="card-body">
+            <div class="terms-settings-intro-wrap">
+                <div class="terms-settings-intro">
+                    <p class="mb-1"><strong>How it works:</strong> These 3 sections are shown on the frontend <code>/terms-condition</code> page.</p>
+                    <p class="mb-0">You can update title and content here. Rich text, links, and lists are supported.</p>
+                </div>
+                <div class="terms-quick-nav">
+                    <a href="#terms-section-card" class="terms-quick-link">Terms</a>
+                    <a href="#privacy-section-card" class="terms-quick-link">Privacy</a>
+                    <a href="#refund-section-card" class="terms-quick-link">Refund</a>
+                </div>
+            </div>
+            <div class="terms-editor-help">
+                <i class="icon-info22 mr-1"></i>
+                Use the editor toolbar to add headings, bullet/numbered lists, and tables without writing HTML manually.
+            </div>
+
+            <form action="/terms-settings" method="post">
+                <div class="terms-section-block" id="terms-section-card">
+                    <div class="terms-section-head">
+                        <h6>Terms and Conditions</h6>
+                        <span class="terms-section-slug">Slug: <code>termsconditions</code></span>
+                    </div>
+                    <p class="terms-section-note">This content appears in the "Terms & Conditions" area on the frontend page.</p>
+                    <div class="form-group">
+                        <label>Section Title</label>
+                        <input type="text" name="termsTitle" class="form-control" value="<%- policySettings.terms.title %>" />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Section Content</label>
+                        <textarea name="termsDetails" class="form-control terms-editor"><%- policySettings.terms.details %></textarea>
+                    </div>
+                </div>
+
+                <div class="terms-section-block" id="privacy-section-card">
+                    <div class="terms-section-head">
+                        <h6>Privacy Policy</h6>
+                        <span class="terms-section-slug">Slug: <code>privacypolicy</code></span>
+                    </div>
+                    <p class="terms-section-note">Use this area to describe data collection, usage, and privacy handling.</p>
+                    <div class="form-group">
+                        <label>Section Title</label>
+                        <input type="text" name="privacyTitle" class="form-control" value="<%- policySettings.privacy.title %>" />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Section Content</label>
+                        <textarea name="privacyDetails" class="form-control terms-editor"><%- policySettings.privacy.details %></textarea>
+                    </div>
+                </div>
+
+                <div class="terms-section-block" id="refund-section-card">
+                    <div class="terms-section-head">
+                        <h6>Refund Policy</h6>
+                        <span class="terms-section-slug">Slug: <code>refundpolicy</code></span>
+                    </div>
+                    <p class="terms-section-note">Define when refund is possible and how users should request support.</p>
+                    <div class="form-group">
+                        <label>Section Title</label>
+                        <input type="text" name="refundTitle" class="form-control" value="<%- policySettings.refund.title %>" />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Section Content</label>
+                        <textarea name="refundDetails" class="form-control terms-editor"><%- policySettings.refund.details %></textarea>
+                    </div>
+                </div>
+
+                <div class="terms-action-footer text-right mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        Update
+                        <i class="icon-paperplane ml-2"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+  (function () {
+    if (typeof tinymce === "undefined") return;
+    tinymce.init({
+      selector: "textarea.terms-editor",
+      plugins: "lists link table code help wordcount",
+      menubar: "edit insert format table tools",
+      toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | link | removeformat | code",
+      toolbar_mode: "wrap",
+      contextmenu: "link table",
+      block_formats: "Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4",
+      table_default_attributes: {
+        border: "1"
+      },
+      table_default_styles: {
+        "border-collapse": "collapse",
+        width: "100%"
+      },
+      table_sizing_mode: "responsive",
+      table_toolbar: "tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol",
+      content_style: "body { font-family: Inter, Arial, sans-serif; font-size:14px; line-height:1.6; } table { border-collapse: collapse; width:100%; } table td, table th { border:1px solid #cbd5e1; padding:8px; }",
+      height: 280,
+      branding: false
+    });
+  })();
+</script>

@@ -1,0 +1,93 @@
+<!-- Head -->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>FAA Admin</title>
+
+    <!-- Global stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"
+        type="text/css">
+    <link href="/assets/global_assets/css/icons/icomoon/styles.min.css" rel="stylesheet" type="text/css">
+    <link href="/assets/template_assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/assets/template_assets/css/bootstrap_limitless.min.css" rel="stylesheet" type="text/css">
+    <link href="/assets/template_assets/css/layout.min.css" rel="stylesheet" type="text/css">
+    <link href="/assets/template_assets/css/components.min.css" rel="stylesheet" type="text/css">
+    <link href="/assets/template_assets/css/colors.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/admin-modern.css" rel="stylesheet" type="text/css">
+    <!-- /global stylesheets -->
+
+    <!-- Core JS files -->
+    <script src="/assets/global_assets/js/main/jquery.min.js"></script>
+    <script src="/assets/global_assets/js/main/bootstrap.bundle.min.js"></script>
+    <script src="/assets/global_assets/js/plugins/loaders/blockui.min.js"></script>
+    <!-- /core JS files -->
+
+    <!-- Theme JS files -->
+    <script src="/assets/global_assets/js/plugins/visualization/d3/d3.min.js"></script>
+    <script src="/assets/global_assets/js/plugins/visualization/d3/d3_tooltip.js"></script>
+    <script src="/assets/global_assets/js/plugins/forms/styling/switchery.min.js"></script>
+    <script src="/assets/global_assets/js/plugins/forms/selects/bootstrap_multiselect.js"></script>
+    <script src="/assets/global_assets/js/plugins/ui/moment/moment.min.js"></script>
+    <script src="/assets/global_assets/js/plugins/pickers/daterangepicker.js"></script>
+    <script src="/assets/global_assets/js/plugins/pagination/bs_pagination.min.js"></script>
+    <script src="/assets/global_assets/js/plugins/tables/datatables/datatables.min.js"></script>
+    <script src="/assets/global_assets/js/plugins/forms/selects/select2.min.js"></script>
+    <script src="/assets/global_assets/js/demo_pages/form_select2.js"></script>
+    <script src="/assets/global_assets/js/plugins/notifications/bootbox.min.js"></script>
+    <script src="/assets/template_assets/js/app.js"></script>
+    <script src="/assets/global_assets/js/demo_pages/dashboard.js"></script>
+    <!-- /theme JS files -->
+    <script src="/assets/global_assets/js/demo_pages/datatables_basic.js"></script>
+
+    <script src="/assets/global_assets/js/plugins/forms/styling/uniform.min.js"></script>
+    <script src="/assets/global_assets/js/demo_pages/form_layouts.js"></script>
+    <script src="/assets/global_assets/js/plugins/notifications/bootbox.min.js"></script>
+    <script src="/assets/global_assets/js/demo_pages/components_modals.js"></script>
+    <script src="https://unpkg.com/js-image-zoom@0.4.1/js-image-zoom.js" type="application/javascript"></script>
+
+    <script src="/assets/global_assets/js/plugins/pickers/anytime.min.js"></script>
+    <script src="/assets/global_assets/js/demo_pages/picker_date.js"></script>
+
+    <!-- Bootstrap Datepicker CSS -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <!-- Bootstrap Datepicker JS -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            var pathname = window.location.pathname || "/";
+
+            const words = pathname.split('_');
+            if (words[0] === "/report") {
+                $('#prescription_reports').addClass('nav-item-expanded nav-item-open');
+            }
+
+            var $sidebarLinks = $('.nav.nav-sidebar > li > a.nav-link[href^="/"]');
+            var matchedLink = null;
+            var matchedLength = -1;
+
+            $sidebarLinks.each(function () {
+                var href = $(this).attr('href');
+                if (!href || href === '#') return;
+
+                if (pathname === href || (pathname.indexOf(href + '/') === 0)) {
+                    if (href.length > matchedLength) {
+                        matchedLength = href.length;
+                        matchedLink = this;
+                    }
+                }
+            });
+
+            if (matchedLink) {
+                $(matchedLink).addClass('active');
+            } else {
+                $('.nav.nav-sidebar > li > a.nav-link[href="' + pathname + '"]').addClass('active');
+            }
+        });
+    </script>
+</head>
+<!-- /head -->

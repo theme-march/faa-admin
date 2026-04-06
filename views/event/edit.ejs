@@ -1,0 +1,439 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/event" class="breadcrumb-item"> Event</a>
+                <span class="breadcrumb-item active">Edit</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Edit</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                    <% } %>
+
+                        <% if (messages.success) { %>
+                            <div style="margin: 0 20px 0 20px"
+                                class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                                <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                            </div>
+                            <% } %>
+
+                                <div class="card-body">
+                                    <form action="/event/edit/<%=id%>" method="post" enctype="multipart/form-data"
+                                        name="form1">
+                                        <input type="hidden" name="id" value="<%= id %>" />
+                                        <div class="form-group">
+                                            <label>Event Title: </label>
+                                            <input type="text" name="event_title" value="<%= event_title %>"
+                                                id="event_title" class="form-control" placeholder="Event Title">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Event Venue: </label>
+                                            <input type="text" name="event_venue" value="<%= event_venue %>"
+                                                id="event_venue" class="form-control" placeholder="Event Venue">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Event Details: </label>
+                                            <textarea id="my-expressjs-tinymce-app"
+                                                name="event_details"><%= event_details %></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Event Short Details: </label>
+                                            <textarea id="my-expressjs-tinymce-app"
+                                                name="event_short_details"><%= event_short_details %></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Event Date Time:</label> <label style="font-weight: bold">
+                                                <%=moment(event_date).format('LLL')%>
+                                            </label>
+                                            <input class="form-control" value="<%= event_date ? moment(event_date).format('YYYY-MM-DD[T]HH:mm') : '' %>" type="datetime-local"
+                                                name="event_date">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Cover Image: </label>
+                                            <div>
+                                                <%if(cover_image===""){%>
+                                                    Previous Image not available
+                                                    <%}else{%>
+                                                        <img width="100%" src="/cover_image_event/<%=cover_image%>" />
+                                                        <%}%>
+                                            </div>
+                                            <input name="_image" type="file" class="form-input-styled" accept="image/*"
+                                                data-fouc>
+                                            <span class="form-text text-muted">Accepted formats: png, jpg. Max file size
+                                                3Mb</span>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Event Session: </label>
+                                            <select name="event_session" class="form-control select-fixed-single"
+                                                data-fouc>
+                                                <option value="Current Event" <%=event_session==="Current Event"
+                                                    ? 'selected' : '' %>>Current Event</option>
+                                                <option value="Past Event" <%=event_session==="Past Event" ? 'selected'
+                                                    : '' %>>Past Event</option>
+                                                <option value="Upcoming Event" <%=event_session==="Upcoming Event"
+                                                    ? 'selected' : '' %>>Upcoming Event</option>
+                                            </select>
+                                        </div>
+
+                                        <!--                        <div class="form-group">-->
+                                        <!--                            <label>Event registration fees: </label>-->
+                                        <!--                            <input type="text" name="event_fees" value="<%= event_fees %>" id="event_fees" class="form-control" placeholder="Event registration fees">-->
+                                        <!--                        </div>-->
+
+                                        <div class="form-group">
+                                            <label>Membership Renew Fee: </label>
+                                            <select name="membership_renew_status" class="form-control select-fixed-single"
+                                                data-fouc>
+                                                <% if (membership_renew_status=='1' ){%>
+                                                    <option value="1" selected>On</option>
+                                                    <option value="0">Off</option>
+                                                    <%}else{%>
+                                                        <option value="1">On</option>
+                                                        <option value="0" selected>Off</option>
+                                                        <%}%>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Membership renew fees: </label>
+                                            <input type="text" name="membership_renew_fees"
+                                                value="<%= membership_renew_fees %>" id="membership_renew_fees"
+                                                class="form-control" placeholder="Membership Renew Fees">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Registration Access: </label>
+                                            <select name="registration_access_mode" class="form-control select-fixed-single"
+                                                data-fouc>
+                                                <option value="both" <%= registration_access_mode === "both" ? 'selected' : '' %>>Login and Without Login Both</option>
+                                                <option value="login_only" <%= registration_access_mode === "login_only" ? 'selected' : '' %>>Only Logged-in Users</option>
+                                                <option value="guest_only" <%= registration_access_mode === "guest_only" ? 'selected' : '' %>>Only Without Login</option>
+                                            </select>
+                                        </div>
+                                        <input type="hidden" name="member_single_fees"
+                                            value="<%= member_single_fees %>" id="member_single_fees">
+                                        <input type="hidden" name="member_spouse_fees"
+                                            value="<%= member_spouse_fees %>" id="member_spouse_fees">
+                                        <input type="hidden" name="student_single_fees"
+                                            value="<%= student_single_fees %>" id="student_single_fees">
+                                        <input type="hidden" name="student_spouse_fees"
+                                            value="<%= student_spouse_fees %>" id="student_spouse_fees">
+                                        <div class="alert alert-info border-0">
+                                            Participation fee fields are managed from the dynamic option builders below.
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Member Participation Type List: </label>
+                                            <input type="hidden" name="member_participation_options" id="member_participation_options"
+                                                value="<%= member_participation_options %>">
+                                            <div class="card border">
+                                                <div class="card-body">
+                                                    <div id="member-participation-builder"></div>
+                                                    <button type="button" id="add-member-participation"
+                                                        class="btn btn-primary btn-sm mt-3">
+                                                        Add More Member Option
+                                                    </button>
+                                                    <div class="form-text text-muted mt-3">
+                                                        Add label and fee. Example: <code>Single</code> and <code>2000</code>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Student/Guest Participation Type List: </label>
+                                            <input type="hidden" name="guest_participation_options" id="guest_participation_options"
+                                                value="<%= guest_participation_options %>">
+                                            <div class="card border">
+                                                <div class="card-body">
+                                                    <div id="guest-participation-builder"></div>
+                                                    <button type="button" id="add-guest-participation"
+                                                        class="btn btn-primary btn-sm mt-3">
+                                                        Add More Student/Guest Option
+                                                    </button>
+                                                    <div class="form-text text-muted mt-3">
+                                                        Add label and fee. Example: <code>Student- BBA/MBA</code> and <code>500</code>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>T-Shirt Gift: </label>
+                                            <select name="t_shirt_gift_status" class="form-control select-fixed-single"
+                                                data-fouc>
+                                                <% if (t_shirt_gift_status=='1' ){%>
+                                                    <option value="1" selected>On</option>
+                                                    <option value="0">Off</option>
+                                                    <%}else{%>
+                                                        <option value="1">On</option>
+                                                        <option value="0" selected>Off</option>
+                                                        <%}%>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>T-Shirt Size List: </label>
+                                            <input type="hidden" name="t_shirt_size_options" id="t_shirt_size_options"
+                                                value="<%= t_shirt_size_options %>">
+                                            <div class="card border">
+                                                <div class="card-body">
+                                                    <div id="tshirt-size-builder"></div>
+                                                    <button type="button" id="add-tshirt-size"
+                                                        class="btn btn-primary btn-sm mt-3">
+                                                        Add More Size
+                                                    </button>
+                                                    <div class="form-text text-muted mt-3">
+                                                        Example: Size <code>M</code> and Description
+                                                        <code>T- Shirt: M - Length 27" chest 38".</code>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Status: </label>
+                                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                                <% if (status=='0' ){%>
+                                                    <option value="1">Published</option>
+                                                    <option value="0" selected>Unpublished</option>
+                                                    <%}else if(status=='1' ){%>
+                                                        <option value="1" selected>Published</option>
+                                                        <option value="0">Unpublished</option>
+                                                        <%}else{%>
+                                                            <option value="1" selected>Published</option>
+                                                            <option value="0">Unpublished</option>
+                                                            <%}%>
+                                            </select>
+                                        </div>
+
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary">Update
+                                                <i class="icon-paperplane ml-2"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->
+
+<script>
+    (function () {
+        function initOptionBuilder(config) {
+            const hiddenInput = document.getElementById(config.hiddenId);
+            const builder = document.getElementById(config.builderId);
+            const addButton = document.getElementById(config.addButtonId);
+
+            function syncHiddenValue() {
+                const rows = builder.querySelectorAll('[data-option-row]');
+                const values = Array.from(rows)
+                    .map((row) => {
+                        const label = row.querySelector('[data-role="label"]').value.trim();
+                        const amount = row.querySelector('[data-role="amount"]').value.trim();
+                        if (!label || !amount) return '';
+                        return `${label}|${amount}`;
+                    })
+                    .filter(Boolean);
+
+                hiddenInput.value = values.join('\n');
+                if (typeof config.afterSync === 'function') {
+                    config.afterSync(rows);
+                }
+            }
+
+            function createRow(label = '', amount = '') {
+                const row = document.createElement('div');
+                row.className = 'border rounded p-3 mb-3';
+                row.setAttribute('data-option-row', 'true');
+                row.innerHTML = `
+                    <div class="form-row align-items-center">
+                        <div class="form-group col-md-6">
+                            <label>Option Label</label>
+                            <input type="text" class="form-control" data-role="label" placeholder="${config.labelPlaceholder}" value="${escapeHtml(label)}">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Fee (Taka)</label>
+                            <input type="number" min="0" class="form-control" data-role="amount" placeholder="${config.amountPlaceholder}" value="${escapeHtml(amount)}">
+                        </div>
+                        <div class="form-group col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-danger btn-block" data-role="remove">Remove</button>
+                        </div>
+                    </div>
+                `;
+
+                row.querySelector('[data-role="label"]').addEventListener('input', syncHiddenValue);
+                row.querySelector('[data-role="amount"]').addEventListener('input', syncHiddenValue);
+                row.querySelector('[data-role="remove"]').addEventListener('click', function () {
+                    row.remove();
+                    if (!builder.querySelector('[data-option-row]')) {
+                        createRow(config.defaultLabel, config.defaultAmount);
+                    }
+                    syncHiddenValue();
+                });
+
+                builder.appendChild(row);
+                syncHiddenValue();
+            }
+
+            function loadInitialValues() {
+                const rawValue = (hiddenInput.value || '').trim();
+                if (!rawValue) {
+                    createRow(config.defaultLabel, config.defaultAmount);
+                    return;
+                }
+
+                rawValue.split(/\r?\n/).forEach((line) => {
+                    const parts = line.split('|');
+                    const label = (parts.shift() || '').trim();
+                    const amount = parts.join('|').trim();
+                    createRow(label, amount);
+                });
+            }
+
+            addButton.addEventListener('click', function () {
+                createRow();
+            });
+
+            loadInitialValues();
+        }
+
+        const hiddenInput = document.getElementById('t_shirt_size_options');
+        const builder = document.getElementById('tshirt-size-builder');
+        const addButton = document.getElementById('add-tshirt-size');
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function syncHiddenValue() {
+            const rows = builder.querySelectorAll('[data-size-row]');
+            const values = Array.from(rows)
+                .map((row) => {
+                    const size = row.querySelector('[data-role="size"]').value.trim();
+                    const description = row.querySelector('[data-role="description"]').value.trim();
+                    if (!size || !description) return '';
+                    return `${size}|${description}`;
+                })
+                .filter(Boolean);
+
+            hiddenInput.value = values.join('\n');
+        }
+
+        function createRow(size = '', description = '') {
+            const row = document.createElement('div');
+            row.className = 'border rounded p-3 mb-3';
+            row.setAttribute('data-size-row', 'true');
+            row.innerHTML = `
+                <div class="form-row align-items-center">
+                    <div class="form-group col-md-3">
+                        <label>Size</label>
+                        <input type="text" class="form-control" data-role="size" placeholder="M" value="${escapeHtml(size)}">
+                    </div>
+                    <div class="form-group col-md-7">
+                        <label>Description</label>
+                        <input type="text" class="form-control" data-role="description" placeholder='T- Shirt: M - Length 27" chest 38".' value="${escapeHtml(description)}">
+                    </div>
+                    <div class="form-group col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-danger btn-block" data-role="remove">Remove</button>
+                    </div>
+                </div>
+            `;
+
+            row.querySelector('[data-role="size"]').addEventListener('input', syncHiddenValue);
+            row.querySelector('[data-role="description"]').addEventListener('input', syncHiddenValue);
+            row.querySelector('[data-role="remove"]').addEventListener('click', function () {
+                row.remove();
+                if (!builder.querySelector('[data-size-row]')) {
+                    createRow();
+                }
+                syncHiddenValue();
+            });
+
+            builder.appendChild(row);
+            syncHiddenValue();
+        }
+
+        function loadInitialValues() {
+            const rawValue = (hiddenInput.value || '').trim();
+            if (!rawValue) {
+                createRow('M', 'T- Shirt: M - Length 27" chest 38".');
+                return;
+            }
+
+            rawValue.split(/\r?\n/).forEach((line) => {
+                const parts = line.split('|');
+                const size = (parts.shift() || '').trim();
+                const description = parts.join('|').trim();
+                createRow(size, description);
+            });
+        }
+
+        addButton.addEventListener('click', function () {
+            createRow();
+        });
+
+        loadInitialValues();
+
+        initOptionBuilder({
+            hiddenId: 'member_participation_options',
+            builderId: 'member-participation-builder',
+            addButtonId: 'add-member-participation',
+            labelPlaceholder: 'Single',
+            amountPlaceholder: '2000',
+            defaultLabel: 'Single',
+            defaultAmount: '2000',
+            afterSync: function (rows) {
+                const amounts = Array.from(rows).map((row) => {
+                    return row.querySelector('[data-role="amount"]').value.trim();
+                });
+                document.getElementById('member_single_fees').value = amounts[0] || 0;
+                document.getElementById('member_spouse_fees').value = amounts[1] || 0;
+            }
+        });
+
+        initOptionBuilder({
+            hiddenId: 'guest_participation_options',
+            builderId: 'guest-participation-builder',
+            addButtonId: 'add-guest-participation',
+            labelPlaceholder: 'Student- BBA/MBA',
+            amountPlaceholder: '500',
+            defaultLabel: 'Student- BBA/MBA',
+            defaultAmount: '500',
+            afterSync: function (rows) {
+                const amounts = Array.from(rows).map((row) => {
+                    return row.querySelector('[data-role="amount"]').value.trim();
+                });
+                document.getElementById('student_single_fees').value = amounts[0] || 0;
+                document.getElementById('student_spouse_fees').value = amounts[1] || 0;
+            }
+        });
+    })();
+</script>

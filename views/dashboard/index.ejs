@@ -1,0 +1,540 @@
+<!--dashboard/index.ejs-->
+<!-- Page header -->
+<div class="page-header page-header-light">
+  <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+    <div class="d-flex">
+      <div class="breadcrumb">
+        <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+        <span class="breadcrumb-item active">Dashboard</span>
+      </div>
+      <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+    </div>
+  </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content dashboard-content">
+  <div class="dashboard-hero">
+    <div>
+      <h2 class="dashboard-title">Dashboard Insights</h2>
+      <p class="dashboard-subtitle">Track events, memberships, sponsors, and payment performance in one place.</p>
+    </div>
+    <div class="dashboard-actions">
+      <a href="/event/add" class="btn btn-primary"><i class="icon-plus2 mr-2"></i>Add New Event</a>
+      <a href="/event_sponsors/add" class="btn btn-outline-primary"><i class="icon-medal mr-2"></i>Add New Sponsor</a>
+      <a href="/event-registrations-download" class="btn btn-info"><i class="icon-file-excel mr-2"></i>Event Reg
+        Excel</a>
+      <form action="/members/excel_report" method="post" class="m-0">
+        <button type="submit" class="btn btn-info"><i class="icon-file-excel mr-2"></i>Member List Excel</button>
+      </form>
+      <a href="/collection-payments-excel" class="btn btn-success"><i class="icon-file-excel mr-2"></i>Export
+        Reports</a>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Total SSL Payment</p>
+          <h3 id="stat-total-ssl-payment" class="summary-stat-value text-primary">৳ <%=
+              Number(summaryStats.totalSslPayment || 0).toLocaleString('en-US', { minimumFractionDigits: 2,
+              maximumFractionDigits: 2 }) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Total Cash Payment</p>
+          <h3 id="stat-total-cash-payment" class="summary-stat-value text-info">৳ <%=
+              Number(summaryStats.totalCashPayment || 0).toLocaleString('en-US', { minimumFractionDigits: 2,
+              maximumFractionDigits: 2 }) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Event Total Paid Amount</p>
+          <h3 id="stat-event-total-paid" class="summary-stat-value text-primary">৳ <%=
+              Number(summaryStats.eventTotalPaidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2,
+              maximumFractionDigits: 2 }) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Membership Total Paid Amount</p>
+          <h3 id="stat-membership-total-paid" class="summary-stat-value text-success">৳ <%=
+              Number(summaryStats.membershipTotalPaidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2,
+              maximumFractionDigits: 2 }) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Donation Total Paid Amount</p>
+          <h3 id="stat-donation-total-paid" class="summary-stat-value text-danger">৳ <%=
+              Number(summaryStats.donationTotalPaidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2,
+              maximumFractionDigits: 2 }) %>
+          </h3>
+          <small id="stat-total-paid-donations" class="summary-stat-subtext">Total Paid Donations: <%=
+              Number(summaryStats.totalPaidDonations || 0) %></small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Total Members</p>
+          <h3 id="stat-total-members" class="summary-stat-value text-dark">
+            <%= Number(summaryStats.totalMembers || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Paid Members</p>
+          <h3 id="stat-paid-members" class="summary-stat-value text-success">
+            <%= Number(summaryStats.paidMembers || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Unpaid Members</p>
+          <h3 id="stat-unpaid-members" class="summary-stat-value text-danger">
+            <%= Number(summaryStats.unpaidMembers || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Pending Approval</p>
+          <h3 id="stat-pending-approval" class="summary-stat-value text-warning">
+            <%= Number(summaryStats.pendingApproval || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Pending Membership Cash</p>
+          <h3 id="stat-pending-membership-cash" class="summary-stat-value text-primary">
+            <%= Number(summaryStats.pendingMembershipCash || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Pending Event Cash</p>
+          <h3 id="stat-pending-event-cash" class="summary-stat-value text-primary">
+            <%= Number(summaryStats.pendingEventCash || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card summary-stat-card">
+        <div class="card-body">
+          <p class="summary-stat-label">Pending Sponsor Cash</p>
+          <h3 id="stat-pending-sponsor-cash" class="summary-stat-value text-primary">
+            <%= Number(summaryStats.pendingSponsorCash || 0) %>
+          </h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xl-7 mb-3">
+      <div class="card dashboard-panel-card">
+        <div class="card-header">
+          <h5 class="card-title">Event-wise Total Paid Amount</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-mobile-wrap">
+            <table id="event-paid-table" class="table table-bordered table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Total Paid Amount (BDT)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-5 mb-3">
+      <div class="card dashboard-panel-card">
+        <div class="card-header">
+          <h5 class="card-title">Membership Category-wise Total Members</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-mobile-wrap">
+            <table id="membership-table" class="table table-bordered table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Membership Category</th>
+                  <th>Total Members</th>
+                  <th>Total Paid Amount (BDT)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xl-7 mb-3">
+      <div class="card dashboard-panel-card">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Event-wise Sponsor Total Paid Amount</h5>
+          <div class="dashboard-filter-group">
+            <select id="dashboard-event-filter" class="form-control">
+              <option value="">All Events</option>
+            </select>
+            <select id="dashboard-sponsor-filter" class="form-control">
+              <option value="">All Sponsors</option>
+            </select>
+            <input type="date" id="dashboard-date-from" class="form-control" />
+            <input type="date" id="dashboard-date-to" class="form-control" />
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-mobile-wrap">
+            <table id="sponsor-summary-table" class="table table-bordered table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Event Name</th>
+                  <th>Sponsor Total Paid (BDT)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-5 mb-3">
+      <div class="card dashboard-panel-card">
+        <div class="card-header">
+          <h5 class="card-title">Recent Activity</h5>
+        </div>
+        <div class="card-body">
+          <ul id="dashboard-activity-list" class="dashboard-activity-list">
+            <% recentActivities.slice(0, 5).forEach(function (activity, idx) { %>
+              <li>
+                <span
+                  class="activity-dot <%= idx % 3 === 0 ? 'dot-blue' : (idx % 3 === 1 ? 'dot-green' : 'dot-amber') %>"></span>
+                <div>
+                  <strong>
+                    <%= activity.activity_title %>
+                  </strong>
+                  <p>
+                    <%= activity.activity_subtitle %>
+                  </p>
+                </div>
+              </li>
+              <% }) %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- /content area -->
+
+<script type="application/json" id="dashboard-payload-json"><%- JSON.stringify({
+  membershipCategoryCounts: membershipCategoryCounts || [],
+  eventPaidSummary: eventPaidSummary || [],
+  sponsorPaidSummary: sponsorPaidSummary || [],
+  sponsorPaymentTable: sponsorPaymentTable || [],
+  recentActivities: recentActivities || [],
+  notificationCounts: notificationCounts || {},
+  summaryStats: summaryStats || {}
+}) %></script>
+
+<script>
+  (function () {
+    let dashboardPayload = {};
+    try {
+      const payloadNode = document.getElementById("dashboard-payload-json");
+      dashboardPayload = JSON.parse(payloadNode?.textContent || "{}");
+    } catch (error) {
+      console.error("Failed to parse dashboard payload JSON:", error);
+      dashboardPayload = {};
+    }
+
+    dashboardPayload.membershipCategoryCounts = dashboardPayload.membershipCategoryCounts || [];
+    dashboardPayload.eventPaidSummary = dashboardPayload.eventPaidSummary || [];
+    dashboardPayload.sponsorPaidSummary = dashboardPayload.sponsorPaidSummary || [];
+    dashboardPayload.sponsorPaymentTable = dashboardPayload.sponsorPaymentTable || [];
+    dashboardPayload.recentActivities = dashboardPayload.recentActivities || [];
+    dashboardPayload.notificationCounts = dashboardPayload.notificationCounts || {};
+    dashboardPayload.summaryStats = dashboardPayload.summaryStats || {};
+
+    function formatMoney(value) {
+      return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
+    }
+
+    function parseDateValue(value) {
+      if (!value) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function initDashboardTable(selector, options) {
+      try {
+        if (!($.fn && $.fn.DataTable)) return null;
+        return $(selector).DataTable(options);
+      } catch (error) {
+        console.error(`Dashboard table init failed for ${selector}:`, error);
+        return null;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderPlainRows($table, rowsHtml, colCount) {
+      const html = rowsHtml && rowsHtml.trim()
+        ? rowsHtml
+        : `<tr><td colspan="${colCount}" class="text-center text-muted">No data found</td></tr>`;
+      $table.find("tbody").html(html);
+    }
+
+    const eventPaidTable = initDashboardTable("#event-paid-table", {
+      data: [],
+      paging: false,
+      info: false,
+      searching: true,
+      order: [[1, "desc"]],
+      columns: [
+        { data: "event_title" },
+        {
+          data: "total_paid",
+          render: (value) => `৳ ${formatMoney(value)}`
+        }
+      ]
+    });
+
+    const membershipTable = initDashboardTable("#membership-table", {
+      data: [],
+      paging: false,
+      info: false,
+      searching: true,
+      order: [[1, "desc"]],
+      columns: [
+        { data: "category_name" },
+        { data: "member_count" },
+        {
+          data: "total_paid_amount",
+          render: (value) => `৳ ${formatMoney(value)}`
+        }
+      ]
+    });
+
+    const sponsorSummaryTable = initDashboardTable("#sponsor-summary-table", {
+      data: [],
+      paging: false,
+      info: false,
+      searching: true,
+      order: [[1, "desc"]],
+      columns: [
+        { data: "event_title" },
+        {
+          data: "sponsor_paid",
+          render: (value) => `৳ ${formatMoney(value)}`
+        }
+      ]
+    });
+
+    function setEventFilterOptions(rows) {
+      const eventFilter = $("#dashboard-event-filter");
+      eventFilter.find("option:not(:first)").remove();
+      const uniqueEvents = [...new Set((rows || []).map((item) => item.event_title).filter(Boolean))];
+      uniqueEvents.forEach((eventName) => {
+        eventFilter.append(`<option value="${eventName}">${eventName}</option>`);
+      });
+    }
+
+    function setSponsorFilterOptions(rows) {
+      const sponsorFilter = $("#dashboard-sponsor-filter");
+      sponsorFilter.find("option:not(:first)").remove();
+      const uniqueSponsors = [...new Set((rows || []).map((item) => item.sponsor_name).filter(Boolean))];
+      uniqueSponsors.forEach((sponsorName) => {
+        sponsorFilter.append(`<option value="${sponsorName}">${sponsorName}</option>`);
+      });
+    }
+
+    function applySponsorFilters(sourceRows) {
+      const rows = sourceRows || dashboardPayload.sponsorPaymentTable || [];
+      const selectedEvent = ($("#dashboard-event-filter").val() || "").trim();
+      const selectedSponsor = ($("#dashboard-sponsor-filter").val() || "").trim();
+      const dateFrom = parseDateValue($("#dashboard-date-from").val());
+      const dateTo = parseDateValue($("#dashboard-date-to").val());
+
+      const filteredRows = rows.filter((row) => {
+        const eventMatch = !selectedEvent || row.event_title === selectedEvent;
+        const sponsorMatch = !selectedSponsor || row.sponsor_name === selectedSponsor;
+        const rowDate = parseDateValue(row.created_date);
+        const fromMatch = !dateFrom || (rowDate && rowDate >= dateFrom);
+        const toMatch = !dateTo || (rowDate && rowDate <= dateTo);
+        return eventMatch && sponsorMatch && fromMatch && toMatch;
+      });
+
+      const sponsorSummaryMap = {};
+      filteredRows.forEach((row) => {
+        const key = row.event_title || "Unknown";
+        sponsorSummaryMap[key] = (sponsorSummaryMap[key] || 0) + Number(row.paid_amount || 0);
+      });
+
+      const summaryRows = Object.keys(sponsorSummaryMap).map((eventTitle) => ({
+        event_title: eventTitle,
+        sponsor_paid: sponsorSummaryMap[eventTitle]
+      }));
+      if (sponsorSummaryTable) {
+        sponsorSummaryTable.clear().rows.add(summaryRows).draw();
+      } else {
+        const rowsHtml = summaryRows.map((row) => `
+          <tr>
+            <td>${escapeHtml(row.event_title)}</td>
+            <td>৳ ${formatMoney(row.sponsor_paid)}</td>
+          </tr>
+        `).join("");
+        renderPlainRows($("#sponsor-summary-table"), rowsHtml, 2);
+      }
+    }
+
+    function renderSummaryTables(payload) {
+      const safePayload = payload || {};
+      dashboardPayload.eventPaidSummary = safePayload.eventPaidSummary || [];
+      dashboardPayload.membershipCategoryCounts = safePayload.membershipCategoryCounts || [];
+      dashboardPayload.sponsorPaidSummary = safePayload.sponsorPaidSummary || [];
+      dashboardPayload.sponsorPaymentTable = safePayload.sponsorPaymentTable || [];
+
+      if (eventPaidTable) {
+        eventPaidTable.clear().rows.add(dashboardPayload.eventPaidSummary || []).draw();
+      } else {
+        const rowsHtml = (dashboardPayload.eventPaidSummary || []).map((row) => `
+          <tr>
+            <td>${escapeHtml(row.event_title)}</td>
+            <td>৳ ${formatMoney(row.total_paid)}</td>
+          </tr>
+        `).join("");
+        renderPlainRows($("#event-paid-table"), rowsHtml, 2);
+      }
+      if (membershipTable) {
+        membershipTable.clear().rows.add(dashboardPayload.membershipCategoryCounts || []).draw();
+      } else {
+        const rowsHtml = (dashboardPayload.membershipCategoryCounts || []).map((row) => `
+          <tr>
+            <td>${escapeHtml(row.category_name)}</td>
+            <td>${escapeHtml(row.member_count)}</td>
+            <td>৳ ${formatMoney(row.total_paid_amount)}</td>
+          </tr>
+        `).join("");
+        renderPlainRows($("#membership-table"), rowsHtml, 3);
+      }
+      if (sponsorSummaryTable) {
+        sponsorSummaryTable.clear().rows.add(dashboardPayload.sponsorPaidSummary || []).draw();
+      } else {
+        const rowsHtml = (dashboardPayload.sponsorPaidSummary || []).map((row) => `
+          <tr>
+            <td>${escapeHtml(row.event_title)}</td>
+            <td>৳ ${formatMoney(row.sponsor_paid)}</td>
+          </tr>
+        `).join("");
+        renderPlainRows($("#sponsor-summary-table"), rowsHtml, 2);
+      }
+
+      setEventFilterOptions(dashboardPayload.sponsorPaymentTable);
+      setSponsorFilterOptions(dashboardPayload.sponsorPaymentTable);
+      applySponsorFilters(dashboardPayload.sponsorPaymentTable);
+    }
+
+    $("#dashboard-event-filter, #dashboard-sponsor-filter, #dashboard-date-from, #dashboard-date-to").on("change", function () {
+      applySponsorFilters(dashboardPayload.sponsorPaymentTable);
+    });
+
+    function updateSummaryStats(stats) {
+      $("#stat-total-ssl-payment").text(`৳ ${formatMoney(stats.totalSslPayment || 0)}`);
+      $("#stat-total-cash-payment").text(`৳ ${formatMoney(stats.totalCashPayment || 0)}`);
+      $("#stat-event-total-paid").text(`৳ ${formatMoney(stats.eventTotalPaidAmount || 0)}`);
+      $("#stat-membership-total-paid").text(`৳ ${formatMoney(stats.membershipTotalPaidAmount || 0)}`);
+      $("#stat-donation-total-paid").text(`৳ ${formatMoney(stats.donationTotalPaidAmount || 0)}`);
+      $("#stat-total-paid-donations").text(`Total Paid Donations: ${Number(stats.totalPaidDonations || 0)}`);
+
+      $("#stat-total-members").text(Number(stats.totalMembers || 0));
+      $("#stat-paid-members").text(Number(stats.paidMembers || 0));
+      $("#stat-unpaid-members").text(Number(stats.unpaidMembers || 0));
+      $("#stat-pending-approval").text(Number(stats.pendingApproval || 0));
+
+      $("#stat-pending-membership-cash").text(Number(stats.pendingMembershipCash || 0));
+      $("#stat-pending-event-cash").text(Number(stats.pendingEventCash || 0));
+      $("#stat-pending-sponsor-cash").text(Number(stats.pendingSponsorCash || 0));
+    }
+
+    function renderRecentActivity(activities) {
+      const container = $("#dashboard-activity-list");
+      container.empty();
+      activities.slice(0, 5).forEach((activity, idx) => {
+        const dotClass = idx % 3 === 0 ? "dot-blue" : (idx % 3 === 1 ? "dot-green" : "dot-amber");
+        container.append(
+          `<li>
+            <span class="activity-dot ${dotClass}"></span>
+            <div>
+              <strong>${activity.activity_title || ""}</strong>
+              <p>${activity.activity_subtitle || ""}</p>
+            </div>
+          </li>`
+        );
+      });
+    }
+
+    function refreshDashboardMetrics() {
+      $.get("/dashboard/metrics", function (response) {
+        if (!response || !response.success) return;
+        renderSummaryTables(response);
+        updateSummaryStats(response.summaryStats || {});
+        renderRecentActivity(response.recentActivities || []);
+      });
+    }
+
+    renderSummaryTables(dashboardPayload);
+    refreshDashboardMetrics();
+    setInterval(refreshDashboardMetrics, 60000);
+  })();
+</script>

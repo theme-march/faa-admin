@@ -1,0 +1,604 @@
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Event Invoice Setup</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .invoice-settings-page .card {
+        border-radius: 14px;
+        border: 1px solid #dbe4f0;
+    }
+
+    .invoice-settings-page .card-title {
+        font-weight: 700;
+    }
+
+    .invoice-settings-page .invoice-subtitle {
+        margin-top: 4px;
+        margin-bottom: 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .invoice-settings-page .quick-steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .invoice-settings-page .quick-step-item {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: #f8fbff;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #334155;
+    }
+
+    .invoice-settings-page .quick-step-item b {
+        display: block;
+        color: #1e293b;
+        margin-bottom: 2px;
+    }
+
+    .invoice-settings-page .invoice-setting-block {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+        background: #ffffff;
+    }
+
+    .invoice-settings-page .invoice-setting-block h6 {
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .invoice-settings-page .action-bar {
+        position: sticky;
+        bottom: 8px;
+        z-index: 20;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(4px);
+    }
+
+    @media (max-width: 1199px) {
+        .invoice-settings-page .quick-steps {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-settings-page .action-bar {
+            flex-direction: column;
+        }
+
+        .invoice-settings-page .action-bar .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="content invoice-settings-page">
+    <div class="row">
+        <div class="col-lg-8 col-xl-8">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <div>
+                        <h5 class="card-title mb-0">Event Invoice Email Setup</h5>
+                        <p class="invoice-subtitle">Configure global invoice settings and optional event-wise custom design from one place.</p>
+                    </div>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <div class="quick-steps">
+                        <div class="quick-step-item">
+                            <b>Step 1: Global Setup</b>
+                            Configure SMTP, sender details, default heading and logo.
+                        </div>
+                        <div class="quick-step-item">
+                            <b>Step 2: Event-wise Design</b>
+                            Select an event only when you need different heading/contact/logo.
+                        </div>
+                        <div class="quick-step-item">
+                            <b>Step 3: Save & Preview</b>
+                            Use live preview and then click the correct save button.
+                        </div>
+                    </div>
+
+                    <form action="/event-invoice-settings" method="post" enctype="multipart/form-data" class="event-invoice-settings-form">
+                        <input type="hidden" name="id" value="<%= id %>" />
+
+                        <div class="invoice-setting-block">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Setup Status:</label>
+                                    <select name="status" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(status) === '1'){%>
+                                            <option value="1" selected>Active</option>
+                                            <option value="0">Inactive</option>
+                                        <%}else{%>
+                                            <option value="1">Active</option>
+                                            <option value="0" selected>Inactive</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Auto Send After Payment:</label>
+                                    <select name="auto_send_status" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(auto_send_status) === '1'){%>
+                                            <option value="1" selected>On</option>
+                                            <option value="0">Off</option>
+                                        <%}else{%>
+                                            <option value="1">On</option>
+                                            <option value="0" selected>Off</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="invoice-setting-block">
+                        <h6 class="font-weight-semibold">SMTP</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>SMTP Host:</label>
+                                    <input type="text" name="smtp_host" value="<%= smtp_host %>" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>SMTP Port:</label>
+                                    <input type="number" name="smtp_port" value="<%= smtp_port %>" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Secure:</label>
+                                    <select name="smtp_secure" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(smtp_secure) === '1'){%>
+                                            <option value="1" selected>Yes</option>
+                                            <option value="0">No</option>
+                                        <%}else{%>
+                                            <option value="1">Yes</option>
+                                            <option value="0" selected>No</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>SMTP User:</label>
+                                    <input type="text" name="smtp_user" value="<%= smtp_user %>" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>SMTP Password:</label>
+                                    <input type="password" name="smtp_pass" value="<%= smtp_pass %>" class="form-control" autocomplete="new-password" required>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="invoice-setting-block">
+                        <h6 class="font-weight-semibold">Email Sender</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>From Name:</label>
+                                    <input type="text" name="from_name" value="<%= from_name %>" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>From Email:</label>
+                                    <input type="email" name="from_email" value="<%= from_email %>" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Reply-To Email:</label>
+                                    <input type="email" name="reply_to_email" value="<%= reply_to_email %>" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="invoice-setting-block">
+                        <h6 class="font-weight-semibold">Template</h6>
+                        <div class="form-group">
+                            <label>Email Subject:</label>
+                            <input type="text" name="email_subject" value="<%= email_subject %>" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email Body:</label>
+                            <textarea name="email_body" rows="7" class="form-control" required><%= email_body %></textarea>
+                            <span class="form-text text-muted">Available placeholders: <code>{{full_name}}</code>, <code>{{event_title}}</code>, <code>{{event_date}}</code>, <code>{{member_type}}</code>, <code>{{pay_amount}}</code>, <code>{{tx_tran_id}}</code></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Invoice Heading:</label>
+                                    <input type="text" name="invoice_title" value="<%= invoice_title %>" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>QR Base URL:</label>
+                                    <input type="text" name="qr_base_url" value="<%= qr_base_url %>" class="form-control">
+                                    <span class="form-text text-muted">Registration ID will be added at the end automatically.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Contact Details Line:</label>
+                            <input type="text" name="contact_details" value="<%= contact_details %>" class="form-control">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Logo Path:</label>
+                                    <input type="hidden" name="logo_path" value="<%= logo_path %>">
+                                    <input type="file" name="invoiceLogoFile" class="form-control" accept="image/*">
+                                    <span class="form-text text-muted">Default logo: <code>public/global_assets/images/banner-logo.jpg</code>. If no file is uploaded, current/default logo will remain.</span>
+                                    <% if (logo_preview_url) { %>
+                                        <div class="mt-2">
+                                            <img src="<%= logo_preview_url %>" alt="Invoice Logo Preview" style="max-width: 240px; max-height: 80px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px; background: #fff;">
+                                        </div>
+                                    <% } %>
+                                    <input type="text" value="<%= logo_path %>" class="form-control mt-2" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Site URL:</label>
+                                    <input type="text" name="site_url" value="<%= site_url %>" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="alert alert-info border-0">
+                            Current event invoice script defaults are already prefilled here. After installing <code>nodemailer</code>, <code>puppeteer</code> and <code>qrcode</code>, paid event registrations can auto-send invoice PDFs from this setup.
+                        </div>
+
+                        <div class="invoice-setting-block">
+                        <h6 class="font-weight-semibold mb-1">Event-wise Invoice Design</h6>
+                        <p class="text-muted mb-3">Select an event and set custom heading, contact line and logo for that event only.</p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Select Event:</label>
+                                    <select name="event_override_event_id" id="event_override_event_id" class="form-control select-fixed-single" data-fouc>
+                                        <option value="">Choose Event</option>
+                                        <% (events || []).forEach(function(ev){ %>
+                                            <option value="<%= ev.id %>"><%= ev.event_title %> (#<%= ev.id %>)</option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Event-wise Invoice Heading:</label>
+                                    <input type="text" name="event_override_invoice_title" id="event_override_invoice_title" class="form-control" placeholder="If empty, global heading will be used">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Event-wise Contact Details:</label>
+                                    <input type="text" name="event_override_contact_details" id="event_override_contact_details" class="form-control" placeholder="If empty, global contact details will be used">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Event-wise Logo (optional):</label>
+                                    <input type="hidden" name="event_override_logo_path" id="event_override_logo_path" value="">
+                                    <input type="file" name="eventLogoFile" class="form-control" accept="image/*">
+                                    <span class="form-text text-muted">Upload only if this event needs a different invoice logo.</span>
+                                    <div class="mt-2" id="event_override_logo_preview_wrap" style="display:none;">
+                                        <img id="event_override_logo_preview" src="" alt="Event Logo Preview" style="max-width: 240px; max-height: 80px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px; background: #fff;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button type="submit" name="save_mode" value="event" class="btn btn-outline-primary mr-2">Save Event-wise Design
+                                <i class="icon-checkmark-circle ml-2"></i>
+                            </button>
+                            <button type="submit" name="save_mode" value="global" class="btn btn-primary">Update Global Settings
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-xl-4">
+            <div class="card" style="position: sticky; top: 84px;">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Invoice PDF Live Preview</h6>
+                </div>
+                <div class="card-body">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+                        <span id="invoice_live_mode" class="badge badge-primary" style="font-size:11px;">Global Preview</span>
+                        <span id="invoice_live_change_state" class="text-muted" style="font-size:11px;">No unsaved changes</span>
+                    </div>
+                    <div id="invoice_live_event_name" class="text-muted mb-2" style="font-size:12px;">Event: Not selected</div>
+                    <div style="border:1px solid #d9e1ec; border-radius:8px; background:#fff; padding:10px;">
+                        <div style="text-align:center; margin-bottom:8px;">
+                            <img id="invoice_live_logo" src="<%= logo_preview_url || '' %>" alt="Invoice Logo" style="width:100%; max-height:64px; object-fit:contain;">
+                        </div>
+
+                        <h6 id="invoice_live_heading" style="font-size:18px; margin:6px 0 8px; font-weight:700; color:#0f172a;">Entry Pass | Welcome</h6>
+                        <div style="border-top:1px solid #1f2937; margin-bottom:8px;"></div>
+
+                        <div style="display:flex; gap:8px; align-items:stretch;">
+                            <div style="flex:1;">
+                                <table style="width:100%; border-collapse:collapse; font-size:10.5px;">
+                                    <tr><td style="padding:2px 0; color:#334155;">Event Name</td><td style="padding:2px 3px; width:8px;">:</td><td style="padding:2px 0;">Sample Event</td></tr>
+                                    <tr><td style="padding:2px 0; color:#334155;">Date</td><td style="padding:2px 3px;">:</td><td style="padding:2px 0;">Dec 15, 2024 6:34 PM</td></tr>
+                                    <tr><td style="padding:2px 0; color:#334155;">Participant Name</td><td style="padding:2px 3px;">:</td><td style="padding:2px 0;">Sample Member</td></tr>
+                                    <tr><td style="padding:2px 0; color:#334155;">Membership Type</td><td style="padding:2px 3px;">:</td><td style="padding:2px 0;">General Member</td></tr>
+                                </table>
+                            </div>
+                            <div style="width:106px; border:1px solid #e2e8f0; border-radius:4px; padding:6px 4px; text-align:center; background:#fcfdff;">
+                                <div style="font-size:10px; font-weight:700; color:#1f2937; margin-bottom:4px;">Scan QR Code for Details</div>
+                                <div style="width:56px; height:56px; margin:0 auto; border:1px solid #94a3b8; display:flex; align-items:center; justify-content:center; font-size:9px; color:#64748b;">QR</div>
+                            </div>
+                        </div>
+
+                        <table style="width:100%; margin-top:8px; border-collapse:collapse; font-size:10.5px;">
+                            <tr>
+                                <td style="padding:2px 0; color:#334155;">Contact details</td>
+                                <td style="padding:2px 4px; width:8px;">:</td>
+                                <td id="invoice_live_contact" style="padding:2px 0;"><%= contact_details || "" %></td>
+                            </tr>
+                        </table>
+
+                        <table style="width:100%; border-collapse:collapse; font-size:10.5px;">
+                            <tr>
+                                <td style="padding:2px 0; color:#334155;">Payment Date</td>
+                                <td style="padding:2px 4px; width:8px;">:</td>
+                                <td style="padding:2px 0;">2026-03-29 15:52:44</td>
+                                <td style="padding:2px 0; text-align:right; color:#334155;">Payment type</td>
+                                <td style="padding:2px 4px; width:8px;">:</td>
+                                <td style="padding:2px 0; text-align:right;">cash</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:2px 0; color:#334155;">Card/Account Number</td>
+                                <td style="padding:2px 4px;">:</td>
+                                <td style="padding:2px 0;">-</td>
+                                <td style="padding:2px 0; text-align:right; color:#334155;">Currency</td>
+                                <td style="padding:2px 4px;">:</td>
+                                <td style="padding:2px 0; text-align:right;">BDT</td>
+                            </tr>
+                        </table>
+
+                        <div style="border-top:1px solid #1f2937; border-bottom:1px solid #1f2937; margin-top:8px; padding:4px 0;">
+                            <table style="width:100%; border-collapse:collapse; font-size:10.5px;">
+                                <tr>
+                                    <td style="font-weight:700;">Description</td>
+                                    <td style="text-align:right; font-weight:700;">Amount</td>
+                                </tr>
+                                <tr>
+                                    <td>With Spouse</td>
+                                    <td style="text-align:right;">100.00</td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align:right; font-weight:700;">Total amount paid</td>
+                                    <td style="text-align:right; font-weight:700;">100.00</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <p id="invoice_live_qr" class="text-muted mb-0 mt-2" style="font-size:11px; word-break:break-all;"><%= qr_base_url || "" %></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const eventOverrides = <%- JSON.stringify(event_overrides || {}) %>;
+        const eventSelect = document.getElementById("event_override_event_id");
+        const titleInput = document.getElementById("event_override_invoice_title");
+        const contactInput = document.getElementById("event_override_contact_details");
+        const logoPathInput = document.getElementById("event_override_logo_path");
+        const previewWrap = document.getElementById("event_override_logo_preview_wrap");
+        const previewImage = document.getElementById("event_override_logo_preview");
+        const globalHeadingInput = document.querySelector('input[name="invoice_title"]');
+        const globalContactInput = document.querySelector('input[name="contact_details"]');
+        const globalQrInput = document.querySelector('input[name="qr_base_url"]');
+        const globalLogoInput = document.querySelector('input[name="invoiceLogoFile"]');
+        const eventLogoInput = document.querySelector('input[name="eventLogoFile"]');
+
+        const liveLogo = document.getElementById("invoice_live_logo");
+        const liveHeading = document.getElementById("invoice_live_heading");
+        const liveContact = document.getElementById("invoice_live_contact");
+        const liveQr = document.getElementById("invoice_live_qr");
+        const liveMode = document.getElementById("invoice_live_mode");
+        const liveChangeState = document.getElementById("invoice_live_change_state");
+        const liveEventName = document.getElementById("invoice_live_event_name");
+
+        let currentEventSnapshot = {
+            invoice_title: "",
+            contact_details: "",
+            logo_path: ""
+        };
+
+        if (!eventSelect) return;
+
+        const getSelectedEventId = () => {
+            if (window.jQuery && typeof window.jQuery.fn !== "undefined") {
+                const jqValue = window.jQuery(eventSelect).val();
+                if (jqValue !== undefined && jqValue !== null) {
+                    return String(jqValue).trim();
+                }
+            }
+            return String(eventSelect.value || "").trim();
+        };
+
+        const hasSelectedEvent = () => {
+            const eventId = getSelectedEventId();
+            if (eventId) return true;
+            return Number(eventSelect.selectedIndex) > 0;
+        };
+
+        const toPreviewUrl = (value) => {
+            const v = String(value || "").trim();
+            if (!v) return "";
+            if (v.startsWith("http://") || v.startsWith("https://")) return v;
+            const withSlash = v.startsWith("/") ? v : "/" + v;
+            return withSlash.replace(/^\/public\//, "/");
+        };
+
+        const applyEventOverride = (eventId) => {
+            const selectedOverride = eventOverrides[String(eventId)] || {};
+            titleInput.value = selectedOverride.invoice_title || "";
+            contactInput.value = selectedOverride.contact_details || "";
+            logoPathInput.value = selectedOverride.logo_path || "";
+            currentEventSnapshot = {
+                invoice_title: selectedOverride.invoice_title || "",
+                contact_details: selectedOverride.contact_details || "",
+                logo_path: selectedOverride.logo_path || ""
+            };
+
+            const previewUrl = toPreviewUrl(selectedOverride.logo_path || "");
+            if (previewUrl) {
+                previewImage.src = previewUrl;
+                previewWrap.style.display = "block";
+            } else {
+                previewImage.removeAttribute("src");
+                previewWrap.style.display = "none";
+            }
+            refreshLivePreview();
+        };
+
+        const isEventOverrideDirty = () => {
+            return (
+                (titleInput?.value || "") !== (currentEventSnapshot.invoice_title || "") ||
+                (contactInput?.value || "") !== (currentEventSnapshot.contact_details || "") ||
+                (logoPathInput?.value || "") !== (currentEventSnapshot.logo_path || "") ||
+                Boolean(eventLogoInput?.files?.[0])
+            );
+        };
+
+        const refreshLivePreview = () => {
+            const hasEvent = hasSelectedEvent();
+            const heading = hasEvent && titleInput.value.trim() ? titleInput.value.trim() : (globalHeadingInput?.value || "").trim();
+            const contact = hasEvent && contactInput.value.trim() ? contactInput.value.trim() : (globalContactInput?.value || "").trim();
+            const qr = (globalQrInput?.value || "").trim();
+
+            liveHeading.textContent = heading || "Entry Pass | Welcome";
+            liveContact.textContent = contact || "-";
+            liveQr.textContent = qr || "-";
+
+            if (hasEvent) {
+                const selectedOption = eventSelect.options[eventSelect.selectedIndex];
+                liveMode.textContent = "Event-wise Preview";
+                liveMode.className = "badge badge-success";
+                liveEventName.textContent = `Event: ${selectedOption ? selectedOption.text : eventSelect.value}`;
+                if (isEventOverrideDirty()) {
+                    liveChangeState.textContent = "Unsaved event-wise changes in preview";
+                    liveChangeState.style.color = "#f59e0b";
+                } else {
+                    liveChangeState.textContent = "Saved event-wise design loaded";
+                    liveChangeState.style.color = "#16a34a";
+                }
+            } else {
+                liveMode.textContent = "Global Preview";
+                liveMode.className = "badge badge-primary";
+                liveEventName.textContent = "Event: Not selected (global settings)";
+                liveChangeState.textContent = "No unsaved changes";
+                liveChangeState.style.color = "#6b7280";
+            }
+
+            if (eventLogoInput?.files?.[0]) {
+                liveLogo.src = URL.createObjectURL(eventLogoInput.files[0]);
+                return;
+            }
+            if (hasEvent && logoPathInput.value.trim()) {
+                liveLogo.src = toPreviewUrl(logoPathInput.value.trim());
+                return;
+            }
+            if (globalLogoInput?.files?.[0]) {
+                liveLogo.src = URL.createObjectURL(globalLogoInput.files[0]);
+                return;
+            }
+            if (!liveLogo.getAttribute("src")) {
+                liveLogo.src = toPreviewUrl("public/global_assets/images/banner-logo.jpg");
+            }
+        };
+
+        eventSelect.addEventListener("change", function () {
+            applyEventOverride(getSelectedEventId());
+        });
+        eventSelect.addEventListener("input", function () {
+            applyEventOverride(getSelectedEventId());
+        });
+
+        if (window.jQuery && typeof window.jQuery.fn !== "undefined") {
+            window.jQuery(eventSelect).on("select2:select select2:clear change", function () {
+                applyEventOverride(getSelectedEventId());
+            });
+        }
+
+        [globalHeadingInput, globalContactInput, globalQrInput, titleInput, contactInput, globalLogoInput, eventLogoInput].forEach(function (el) {
+            if (!el) return;
+            el.addEventListener("input", refreshLivePreview);
+            el.addEventListener("change", refreshLivePreview);
+        });
+
+        applyEventOverride(getSelectedEventId());
+        refreshLivePreview();
+    })();
+</script>

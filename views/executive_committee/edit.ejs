@@ -1,0 +1,148 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/executive_committee" class="breadcrumb-item">Executive Committee Members</a>
+                <span class="breadcrumb-item active">Edit</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Edit Executive Committee Member</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/executive_committee/edit/<%=id%>" method="post" enctype="multipart/form-data" name="form1">
+                        <input type="hidden" name="id" value="<%= id %>" />
+
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" name="name" value="<%= name %>" class="form-control" placeholder="Full name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Designation:</label>
+                            <% const designationOptions = [
+                                "President",
+                                "Vice President",
+                                "Secretary General",
+                                "Treasurer",
+                                "First Joint Secretary",
+                                "Second Joint Secretary",
+                                "Organizing Secretary",
+                                "Social Welfare Secretary",
+                                "Cultural Secretary",
+                                "Professional Development Secretary",
+                                "Media and Publication Secretary",
+                                "Immediate Past President",
+                                "Ex-officio Member",
+                                "Member"
+                            ]; %>
+                            <% const hasCustomDesignation = designation && !designationOptions.includes(designation); %>
+                            <select name="designation" class="form-control select-fixed-single" data-fouc required>
+                                <option value="">Select designation</option>
+                                <% if (hasCustomDesignation) { %>
+                                    <option value="<%= designation %>" selected><%= designation %> (Current)</option>
+                                <% } %>
+                                <% designationOptions.forEach(function(item) { %>
+                                    <option value="<%= item %>" <%= designation === item ? 'selected' : '' %>><%= item %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Image:</label>
+                            <div class="mb-2">
+                                <img id="imagePreview" src="<%= image ? '/executive_committee_images/' + image : 'https://via.placeholder.com/220x220?text=Preview' %>" style="width: 220px; height: 220px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;" />
+                            </div>
+                            <input id="imageInput" name="_file" type="file" class="form-input-styled" accept="image/*" data-fouc>
+                            <span class="form-text text-muted">Accepted formats: png, jpg, jpeg, webp. Max file size 10Mb</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Bio:</label>
+                            <textarea id="committeeBio" name="bio" class="form-control" rows="6" placeholder="Write short profile/bio"><%= bio %></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" name="email" value="<%= email %>" class="form-control" placeholder="email@example.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Phone:</label>
+                            <input type="text" name="phone" value="<%= phone %>" class="form-control" placeholder="Phone number">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Order (sorting):</label>
+                            <input type="number" name="display_order" value="<%= display_order %>" class="form-control" placeholder="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status:</label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <option value="1" <%= status === '1' ? 'selected' : '' %>>Active</option>
+                                <option value="0" <%= status === '0' ? 'selected' : '' %>>Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Update
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /content area -->
+
+<script>
+    $(document).ready(function() {
+        $("#imageInput").on("change", function(evt) {
+            const [file] = evt.target.files;
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $("#imagePreview").attr("src", e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        if (typeof tinymce !== "undefined") {
+            tinymce.init({
+                selector: "#committeeBio",
+                menubar: false,
+                height: 220,
+                plugins: "lists link code",
+                toolbar: "undo redo | bold italic | bullist numlist | link | code"
+            });
+        }
+    });
+</script>

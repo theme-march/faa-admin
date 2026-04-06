@@ -1,0 +1,153 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/home_page" class="breadcrumb-item"> Home Page Item</a>
+                <span class="breadcrumb-item active">Add Home Page Item Image</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-12">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Add Home Page Item Image</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px"
+                         class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/home_page/media_list/<%= id %>" method="post" enctype="multipart/form-data" name="form1">
+
+                        <div class="col-lg-12">
+
+                            <% if(media_list.length === 0){ %>
+                                <input id="list_num" type="hidden" value="2"/>
+                            <% }else{ %>
+                                <input id="list_num" type="hidden" value="<%= media_list.length + 1 %>"/>
+                            <% } %>
+
+                            <div class="col-lg-12 table-responsive">
+                                <table class="table table-bordered table-striped" id="tab_logic">
+                                    <thead>
+                                    <tr>
+                                        <th width="40%">Title</th>
+                                        <th width="10%">Order By</th>
+                                        <th width="30%">Image</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="newRow">
+
+                                    <% if(media_list.length === 0){ %>
+                                        <tr id="newRow_1">
+                                            <td><input class="form-control title" id="title_1" name="title" type="text"/></td>
+                                            <td><input class="form-control title" id="order_by_1" name="order_by" type="text"/></td>
+                                            <td><input name="ff" type="file" class="form-input-styled" accept="image/*" data-fouc></td>
+                                        </tr>
+                                    <% }else{ %>
+                                    <% for(let i = 0;i < media_list.length;i++){ %>
+                                    <tr id="newRow_<%= i+1 %>">
+                                        <td><input value="<%= media_list[i].title %>" class="form-control title" id="title_<%= i+1 %>" name="title" type="text"/></td>
+                                        <td><input value="<%= media_list[i].order_by %>" class="form-control title" id="order_by_<%= i+1 %>" name="order_by" type="text"/></td>
+                                        <td>
+                                            <div>
+                                                <img width="40%" src="/home_page_image/<%= media_list[i].image %>"/>
+                                            </div>
+                                            <div style="margin-top: 5px">
+                                                <input name="ff" type="file" class="form-input-styled" accept="image/*" data-fouc>
+                                            </div>
+
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                                    <% } %>
+
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="row">
+                                <button id="add_row" type="button"
+                                        class="btn bg-teal-400 btn-labeled btn-labeled-left btn-sm"
+                                        style="margin-top: 10px;">
+                                    <b><i class="icon-plus-circle2 "></i></b>
+                                    Add Row
+                                </button>
+                                <button id="delete_row" type="button"
+                                        class="btn bg-danger btn-labeled btn-labeled-left btn-sm"
+                                        style="margin-top: 10px; margin-left: 10px">
+                                    <b><i class="icon-minus-circle2 "></i></b>
+                                    Delete Row
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">
+                                <% if(media_list.length === 0){ %>
+                                    Submit
+                                <% }else{ %>
+                                    Update
+                                <% } %>
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->
+
+<script>
+
+    $("#add_row").click(function () {
+        var num = $('#list_num').val();
+        var html = '';
+        html += '<tr id="newRow_' + num + '">';
+        html += '<td><input class="form-control title" id="title_' + num + '" name="title" type="text"/></td>';
+        html += '<td><input class="form-control order_by" id="order_by_' + num + '" name="order_by" type="text"/></td>';
+        html += '<td><input name="ff" type="file" class="form-input-styled" accept="image/*" ></td>';
+        html += '</tr>';
+        var row_num = parseInt(num) + 1;
+        $('#list_num').val(row_num);
+        $('#newRow').append(html);
+    });
+
+    $("#delete_row").click(function () {
+        var num = $('#list_num').val();
+        if (num === "2") {
+            alert("First row not deleted !")
+        } else {
+            $('#newRow_' + (parseInt(num) - 1)).remove();
+            var row_num = parseInt(num) - 1;
+            $('#list_num').val(row_num);
+        }
+    });
+
+</script>

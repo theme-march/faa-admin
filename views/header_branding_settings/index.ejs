@@ -1,0 +1,68 @@
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Header Branding Settings</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="row">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Header Branding Settings</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <p class="text-muted mb-3">Update the header logo, title, and subtitle shown on the frontend website.</p>
+                    <form action="/header-branding-settings" method="post" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label>Header Title</label>
+                                    <input type="text" name="headerTitle" class="form-control" value="<%= headerSettings.headerTitle %>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label>Header Subtitle</label>
+                                    <input type="text" name="headerSubtitle" class="form-control" value="<%= headerSettings.headerSubtitle %>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label>Upload Header Logo (optional)</label>
+                            <input type="file" name="headerLogoFile" class="form-control" accept=".png,.jpg,.jpeg,.svg,.webp">
+                            <small class="text-muted">If no file is uploaded, the current/default header logo will remain.</small>
+                        </div>
+                        <% if (headerSettings.headerLogoUrl) { %>
+                            <div class="mb-3">
+                                <img src="<%= headerSettings.headerLogoUrl %>" alt="Header Logo Preview" style="max-height: 64px; width: auto;">
+                            </div>
+                        <% } %>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            Update Header Settings <i class="icon-paperplane ml-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

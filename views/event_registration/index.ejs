@@ -1,0 +1,208 @@
+<!--view/event_registration/index.ejs-->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Event Registration</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card event-registration-card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Event Registration List</h5>
+        </div>
+        <div class="card-body">
+            <% if (messages.error) { %>
+                <div class="alert alert-danger alert-styled-left alert-dismissible mb-3">
+                    <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                </div>
+            <% } %>
+
+            <% if (messages.success) { %>
+                <div class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible mb-3">
+                    <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                </div>
+            <% } %>
+            <div class="event-registration-toolbar">
+                <div class="filter-container event-registration-filters">
+                    <div class="event-filter-item">
+                        <label for="event-filter">Event</label>
+                        <select id="event-filter" class="form-control">
+                            <option value="">All</option>
+                            <% (eventOptions || []).forEach(function(item){ %>
+                                <option value="<%= item.id %>"><%= item.event_title %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="event-filter-item">
+                        <label for="member-type-filter">Member Type</label>
+                        <select id="member-type-filter" class="form-control">
+                            <option value="">All</option>
+                            <% (memberTypeOptions || []).forEach(function(item){ %>
+                                <option value="<%= item.id %>"><%= item.category_name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="event-filter-item">
+                        <label for="tx-status-filter">Transaction Status</label>
+                        <select id="tx-status-filter" class="form-control">
+                            <option value="">All</option>
+                            <option value="__PAID__">Paid</option>
+                            <option value="__UNPAID__">Unpaid</option>
+                            <% (txStatusOptions || []).forEach(function(item){ %>
+                                <option value="<%= item.tx_status %>"><%= item.tx_status %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center event-registration-actions" style="gap: 10px;">
+                    <button id="download-excel" class="btn btn-success">Download Excel</button>
+                    <form id="bulk-delete-form" action="/event-registration/bulk-delete" method="post" class="m-0">
+                        <input type="hidden" name="selected_ids" id="selected-registration-ids">
+                        <button type="submit" id="bulk-delete-button" class="btn btn-danger" disabled>Delete Selected</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-mobile-wrap">
+            <table id="list" class="table datatable-basic table-bordered table-striped table-hover">
+                <thead>
+                <tr>
+                    <th style="width: 50px;">
+                        <input type="checkbox" id="select-all-registrations">
+                    </th>
+                    <th>Event ID</th>
+                    <th>Event Title</th>
+                    <th>Full Name</th>
+                    <th>Member Type</th>
+                    <th>Participation Type</th>
+                    <th>Pay Amount</th>
+                    <th>TX Status</th>
+                    <th>Payment Type</th>
+                    <th>Entry Password</th>
+                    <th>Enter Date Time</th>
+                    <th>Email Status</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Destroy any existing DataTable instance before initializing a new one
+        if ($.fn.dataTable.isDataTable('#list')) {
+            $('#list').DataTable().clear().destroy();
+        }
+
+        // Initialize DataTable with server-side processing
+        var table = $('#list').DataTable({
+            processing: true, // Show processing indicator
+            serverSide: true, // Enable server-side processing
+            scrollX: true,
+            autoWidth: false,
+            ajax: {
+                url: '/event-registrations-data', // API endpoint
+                type: 'GET',
+                data: function(d) {
+                    // Include the filter values in the request data
+                    d.event = $('#event-filter').val();  // Get selected event filter value
+                    d.member_type = $('#member-type-filter').val(); // Get selected member_type filter value
+                    d.tx_status = $('#tx-status-filter').val(); // Get selected tx_status filter value
+                }
+            },
+            columns: [
+                { data: 'select_checkbox', orderable: false, searchable: false },
+                { data: 'id' },
+                { data: 'event_title' },
+                { data: 'full_name' },
+                { data: 'member_type' },
+                { data: 'participation_type' },
+                { data: 'pay_amount' },
+                { data: 'tx_status' },
+                { data: 'payment_type' },
+                { data: 'entry_passcode' },
+                { data: 'enter_date_time' },
+                { data: 'email_status' },
+                { data: 'action', orderable: false, searchable: false }
+            ],
+            order: [[1, 'desc']]
+        });
+
+        // Event listener for filter changes
+        $('#event-filter, #member-type-filter, #tx-status-filter').on('change', function() {
+            table.ajax.reload();  // Reload table data when filter changes
+        });
+
+function updateBulkDeleteState() {
+            var selectedIds = $('.registration-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+
+            $('#selected-registration-ids').val(JSON.stringify(selectedIds));
+            $('#bulk-delete-button').prop('disabled', selectedIds.length === 0);
+        }
+
+        $('#list').on('change', '.registration-checkbox', function() {
+            var totalVisible = $('.registration-checkbox').length;
+            var checkedVisible = $('.registration-checkbox:checked').length;
+            $('#select-all-registrations').prop('checked', totalVisible > 0 && totalVisible === checkedVisible);
+            updateBulkDeleteState();
+        });
+
+        $('#select-all-registrations').on('change', function() {
+            $('.registration-checkbox').prop('checked', $(this).is(':checked'));
+            updateBulkDeleteState();
+        });
+
+        $('#bulk-delete-form').on('submit', function() {
+            updateBulkDeleteState();
+            if (!$('#selected-registration-ids').val() || $('#selected-registration-ids').val() === '[]') {
+                alert('Please select at least one event registration.');
+                return false;
+            }
+            return confirm('Delete selected event registrations permanently?');
+        });
+
+        table.on('draw', function() {
+            $('#select-all-registrations').prop('checked', false);
+            updateBulkDeleteState();
+        });
+
+        $(window).on('resize', function() {
+            table.columns.adjust();
+        });
+
+        // Add event listener for the download button
+        $('#download-excel').on('click', function() {
+            var event = $('#event-filter').val();
+            var member_type = $('#member-type-filter').val();
+            var tx_status = $('#tx-status-filter').val();
+
+            // Trigger an AJAX call to download the Excel file
+            window.location.href = `/event-registrations-download?event=${event}&member_type=${member_type}&tx_status=${tx_status}`;
+        });
+
+    });
+</script>
+
+
+
+
+
+
+

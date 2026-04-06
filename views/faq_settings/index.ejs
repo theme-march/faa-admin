@@ -1,0 +1,123 @@
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">FAQ Settings</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="row">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Frequently Asked Questions Settings</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/faq-settings" method="post">
+                        <div id="faq-wrapper">
+                            <% (faqItems || []).forEach(function(item, idx){ %>
+                                <div class="card border mb-2 faq-row">
+                                    <div class="card-body">
+                                        <div class="form-group mb-2">
+                                            <label>Question</label>
+                                            <input type="text" name="faqQuestion" class="form-control" value="<%= item.question %>" placeholder="Enter FAQ question">
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <label>Answer</label>
+                                            <textarea name="faqAnswer" class="form-control" rows="3" placeholder="Enter FAQ answer"><%= item.answer %></textarea>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-faq-btn" <%= idx === 0 ? 'disabled' : '' %>>Remove FAQ</button>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-faq-btn">
+                            <i class="icon-plus22 mr-1"></i> Add More FAQ
+                        </button>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">
+                                Update <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var wrapper = document.getElementById('faq-wrapper');
+        var addBtn = document.getElementById('add-faq-btn');
+        if (!wrapper || !addBtn) return;
+
+        function refreshRemoveState() {
+            var rows = wrapper.querySelectorAll('.faq-row');
+            rows.forEach(function (row, index) {
+                var btn = row.querySelector('.remove-faq-btn');
+                if (btn) btn.disabled = rows.length === 1 && index === 0;
+            });
+        }
+
+        function makeFaqRow(question, answer) {
+            var row = document.createElement('div');
+            row.className = 'card border mb-2 faq-row';
+            row.innerHTML =
+                '<div class="card-body">' +
+                '  <div class="form-group mb-2">' +
+                '    <label>Question</label>' +
+                '    <input type="text" name="faqQuestion" class="form-control" placeholder="Enter FAQ question">' +
+                '  </div>' +
+                '  <div class="form-group mb-2">' +
+                '    <label>Answer</label>' +
+                '    <textarea name="faqAnswer" class="form-control" rows="3" placeholder="Enter FAQ answer"></textarea>' +
+                '  </div>' +
+                '  <button type="button" class="btn btn-outline-danger btn-sm remove-faq-btn">Remove FAQ</button>' +
+                '</div>';
+
+            row.querySelector('input').value = question || '';
+            row.querySelector('textarea').value = answer || '';
+            return row;
+        }
+
+        addBtn.addEventListener('click', function () {
+            wrapper.appendChild(makeFaqRow('', ''));
+            refreshRemoveState();
+        });
+
+        wrapper.addEventListener('click', function (event) {
+            if (!event.target.classList.contains('remove-faq-btn')) return;
+            var row = event.target.closest('.faq-row');
+            if (row) row.remove();
+            if (!wrapper.querySelector('.faq-row')) {
+                wrapper.appendChild(makeFaqRow('', ''));
+            }
+            refreshRemoveState();
+        });
+
+        if (!wrapper.querySelector('.faq-row')) {
+            wrapper.appendChild(makeFaqRow('', ''));
+        }
+        refreshRemoveState();
+    })();
+</script>

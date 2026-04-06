@@ -1,0 +1,141 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Forgot Password SMTP</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="row">
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Forgot Password SMTP Settings</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/forgot-password-smtp-settings" method="post" name="forgotPasswordSmtpForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>System Status</label>
+                                    <select name="status" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(status) === '1'){%>
+                                            <option value="1" selected>Active</option>
+                                            <option value="0">Inactive</option>
+                                        <%}else{%>
+                                            <option value="1">Active</option>
+                                            <option value="0" selected>Inactive</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Secure</label>
+                                    <select name="smtp_secure" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(smtp_secure) === '1'){%>
+                                            <option value="1" selected>Yes</option>
+                                            <option value="0">No</option>
+                                        <%}else{%>
+                                            <option value="1">Yes</option>
+                                            <option value="0" selected>No</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>SMTP Port</label>
+                                    <input type="number" min="1" max="65535" name="smtp_port" value="<%= smtp_port %>" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>SMTP Host</label>
+                                    <input type="text" name="smtp_host" value="<%= smtp_host %>" class="form-control" placeholder="mail.example.com" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>SMTP User</label>
+                                    <input type="text" name="smtp_user" value="<%= smtp_user %>" class="form-control" placeholder="no-reply@example.com" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>SMTP Password</label>
+                            <input type="text" name="smtp_pass" value="<%= smtp_pass %>" class="form-control" placeholder="SMTP Password" required>
+                        </div>
+
+                        <h6 class="font-weight-semibold">Email Sender</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>From Name</label>
+                                    <input type="text" name="from_name" value="<%= from_name %>" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>From Email</label>
+                                    <input type="email" name="from_email" value="<%= from_email %>" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Reply-To Email</label>
+                                    <input type="email" name="reply_to_email" value="<%= reply_to_email %>" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="font-weight-semibold">Forgot Password Template</h6>
+                        <div class="form-group">
+                            <label>Email Subject</label>
+                            <input type="text" name="email_subject" value="<%= email_subject %>" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email Body</label>
+                            <textarea name="email_body" rows="8" class="form-control" required><%= email_body %></textarea>
+                            <span class="form-text text-muted">
+                                Available placeholders:
+                                <code>{{member_name}}</code>,
+                                <code>{{member_email}}</code>,
+                                <code>{{reset_url}}</code>
+                            </span>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Update
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

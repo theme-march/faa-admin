@@ -1,0 +1,90 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/gallery" class="breadcrumb-item"> Gallery</a>
+                <span class="breadcrumb-item active">Edit</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Edit</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/gallery/edit/<%=id%>" method="post" enctype="multipart/form-data" name="form1">
+                        <input type="hidden" name="id" value="<%= id %>" />
+
+                        <div class="form-group">
+                            <label>Title: </label>
+                            <input type="text" name="title" value="<%= title %>" id="title" class="form-control" placeholder="Title">
+                        </div>
+                        <div class="form-group">
+                            <label>Image: </label>
+                            <div>
+                                <%if(image===""){%>
+                                    Previous pdf not available
+                                <%}else{%>
+                                    <a href="/gallery/<%=image%>">Preview</a>
+                                <%}%>
+                            </div>
+                            <input name="_file" type="file" class="form-input-styled" accept="application/image" data-fouc>
+                            <span class="form-text text-muted">Accepted formats: png, jpg. Max file size 3Mb</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Status: </label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <% if (status == '0'){%>
+                                    <option value="1">Published</option>
+                                    <option value="0" selected>Unpublished</option>
+                                <%}else if(status == '1'){%>
+                                    <option value="1" selected>Published</option>
+                                    <option value="0">Unpublished</option>
+                                <%}else{%>
+                                    <option value="1" selected>Published</option>
+                                    <option value="0">Unpublished</option>
+                                <%}%>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Update
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->

@@ -1,0 +1,151 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/members/" class="breadcrumb-item"> Member List</a>
+                <span class="breadcrumb-item active">Add New Member</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Add New Member</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/member/add" method="post" enctype="multipart/form-data" name="form1">
+                        <div class="form-group">
+                            <label>Select Membership Category: </label>
+                            <select name="membership_category_id" class="form-control select-fixed-single" data-fouc>
+                                <%for (let i=0; i<category_list.length;i++){%>
+                                    <option value="<%=category_list[i].id%>" <%= category_list[i].id === membership_category_id ? 'selected' : ''%>><%=category_list[i].category_name%></option>
+                                <%}%>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Name: </label>
+                            <input type="text" name="name" value="<%= name %>" class="form-control" placeholder="Name">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='name').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number: </label>
+                            <input type="text" name="phone_number" value="<%= phone_number %>" class="form-control" placeholder="Phone Number">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='phone_number').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Email: </label>
+                            <input type="text" name="email" value="<%= email %>" class="form-control" placeholder="Email">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='email').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Address: </label>
+                            <input type="text" name="address" value="<%= address %>" class="form-control" placeholder="Address">
+                        </div>
+                        <div class="form-group">
+                            <label for="hsc_passing_year">HSC Passing Year:</label>
+                            <div class="input-group">
+                                <input type="text" id="hsc_passing_year" name="hsc_passing_year" value="<%= hsc_passing_year %>" class="form-control" placeholder="Select Year" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Batch number/ Session: </label>
+                            <select name="session" class="form-control select-fixed-single" data-fouc>
+                                <%for (let i=0; i<batch_session_list.length;i++){%>
+                                    <option value="<%=batch_session_list[i].batch_session_name%>" <%= batch_session_list[i].batch_session_name === session ? 'selected' : ''%>><%=batch_session_list[i].batch_session_name%></option>
+                                <%}%>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Current Occupation: </label>
+                            <select name="occupation" class="form-control select-fixed-single" data-fouc>
+                                <%for (let i=0; i<occupation_list.length;i++){%>
+                                <option value="<%=occupation_list[i].occupation_name%>" <%= occupation_list[i].occupation_name === occupation ? 'selected' : ''%>><%=occupation_list[i].occupation_name%></option>
+                                <%}%>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Organization Name: </label>
+                            <input type="text" name="organization_name" value="<%= organization_name %>" class="form-control" placeholder="Organization Name">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='organization_name').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Designation Name: </label>
+                            <input type="text" name="designation_name" value="<%= designation_name %>" class="form-control" placeholder="Designation Name">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='designation_name').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Password: </label>
+                            <input type="text" name="password" value="<%= password %>" class="form-control" placeholder="Password">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='password').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Admin Approval: </label>
+                            <select name="admin_approval" class="form-control select-fixed-single" data-fouc>
+                                <option value="1" <%= admin_approval === 1 ? 'selected' : ''%>>Endorse (I Know)</option>
+                                <option value="1" <%= admin_approval === 2 ? 'selected' : ''%>>Endorse and Approval</option>
+                                <option value="1" <%= admin_approval === 3 ? 'selected' : ''%>>No Admin Rights</option>
+                                <option value="0" <%= admin_approval === 0 ? 'selected' : ''%>>Not Approval</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status: </label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <option value="1" <%= status === 1 ? 'selected' : ''%>>Published</option>
+                                <option value="0" <%= status === 0 ? 'selected' : ''%>>Unpublished</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Member Image: </label>
+                            <input name="_image" type="file" class="form-input-styled" accept="image/*" data-fouc>
+                            <span class="form-text text-muted">Accepted formats: png, jpg. Max file size 3Mb</span>
+                        </div>
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Add
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->
+
+<script>
+    $('#hsc_passing_year').datepicker({
+        format: 'yyyy',
+        viewMode: 'years',
+        minViewMode: 'years',
+        autoclose: true
+    });
+</script>

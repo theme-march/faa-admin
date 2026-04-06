@@ -1,0 +1,141 @@
+﻿<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Payment Setup</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Payment Setup</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/payment-settings" method="post" name="form1">
+                        <input type="hidden" name="id" value="<%= id %>" />
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>System Status</label>
+                                    <select name="status" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(status) === '1'){%>
+                                            <option value="1" selected>Active</option>
+                                            <option value="0">Inactive</option>
+                                        <%}else{%>
+                                            <option value="1">Active</option>
+                                            <option value="0" selected>Inactive</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>SSL Payment</label>
+                                    <select name="ssl_enabled" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(ssl_enabled) === '1'){%>
+                                            <option value="1" selected>On</option>
+                                            <option value="0">Off</option>
+                                        <%}else{%>
+                                            <option value="1">On</option>
+                                            <option value="0" selected>Off</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Cash Payment</label>
+                                    <select name="cash_enabled" class="form-control select-fixed-single" data-fouc>
+                                        <% if (String(cash_enabled) === '1'){%>
+                                            <option value="1" selected>On</option>
+                                            <option value="0">Off</option>
+                                        <%}else{%>
+                                            <option value="1">On</option>
+                                            <option value="0" selected>Off</option>
+                                        <%}%>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Store ID</label>
+                                    <input type="text" name="store_id" value="<%= store_id %>" class="form-control" placeholder="SSLCommerz Store ID">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Store Password</label>
+                                    <input type="text" name="store_passwd" value="<%= store_passwd %>" class="form-control" placeholder="SSLCommerz Store Password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Cash Payment Notice</label>
+                            <textarea
+                                name="cash_payment_notice"
+                                class="form-control"
+                                rows="3"
+                                placeholder="Example: bKash/Nagad number: 017xxxxxxxx (Send Money option)"
+                            ><%= cash_payment_notice || '' %></textarea>
+                            <span class="form-text text-muted">This notice will be shown on frontend when user selects Cash payment.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Site URL</label>
+                            <input type="text" name="site_url" value="<%= site_url %>" class="form-control" placeholder="http://localhost:3001" required>
+                            <span class="form-text text-muted">Payment success, fail and cancel pages will redirect to this frontend/base URL.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Gateway Mode</label>
+                            <select name="is_live" class="form-control select-fixed-single" data-fouc>
+                                <% if (String(is_live) === '1'){%>
+                                    <option value="1" selected>Live</option>
+                                    <option value="0">Sandbox</option>
+                                <%}else{%>
+                                    <option value="1">Live</option>
+                                    <option value="0" selected>Sandbox</option>
+                                <%}%>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Update
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

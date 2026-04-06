@@ -1,0 +1,145 @@
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Contact Settings</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="row">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Contact Card Settings (Contact Us)</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/contact-settings" method="post">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Card Title</label>
+                                    <input type="text" name="contactTitle" class="form-control" value="<%= contactSettings.title %>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Card Facebook URL</label>
+                                    <input type="text" name="contactFacebookUrl" class="form-control" value="<%= contactSettings.facebookUrl %>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Card Help Title</label>
+                            <input type="text" name="contactHelpTitle" class="form-control" value="<%= contactSettings.helpTitle %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Card Phone Numbers</label>
+                            <div id="contact-phones-wrapper">
+                                <% (contactSettings.phones || []).forEach(function(phone, idx){ %>
+                                    <div class="input-group mb-2 contact-phone-row">
+                                        <input type="text" name="contactPhones" class="form-control" value="<%= phone %>" placeholder="+880 1XXX-XXXXXX">
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-outline-danger remove-phone-btn" <%= idx === 0 ? 'disabled' : '' %>>
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-contact-phone-btn">
+                                <i class="icon-plus22 mr-1"></i> Add More Phone
+                            </button>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Card Email</label>
+                                    <input type="text" name="contactEmail" class="form-control" value="<%= contactSettings.email %>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Card Address</label>
+                                    <input type="text" name="contactAddress" class="form-control" value="<%= contactSettings.address %>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">
+                                Update <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var wrapper = document.getElementById('contact-phones-wrapper');
+        var addBtn = document.getElementById('add-contact-phone-btn');
+        if (!wrapper || !addBtn) return;
+
+        function refreshRemoveState() {
+            var rows = wrapper.querySelectorAll('.contact-phone-row');
+            rows.forEach(function (row, index) {
+                var btn = row.querySelector('.remove-phone-btn');
+                if (btn) btn.disabled = rows.length === 1 && index === 0;
+            });
+        }
+
+        function makeRow(value) {
+            var row = document.createElement('div');
+            row.className = 'input-group mb-2 contact-phone-row';
+            row.innerHTML =
+                '<input type="text" name="contactPhones" class="form-control" placeholder="+880 1XXX-XXXXXX">' +
+                '<div class="input-group-append">' +
+                '  <button type="button" class="btn btn-outline-danger remove-phone-btn">Remove</button>' +
+                '</div>';
+            row.querySelector('input').value = value || '';
+            return row;
+        }
+
+        addBtn.addEventListener('click', function () {
+            wrapper.appendChild(makeRow(''));
+            refreshRemoveState();
+        });
+
+        wrapper.addEventListener('click', function (event) {
+            if (!event.target.classList.contains('remove-phone-btn')) return;
+            var row = event.target.closest('.contact-phone-row');
+            if (row) row.remove();
+            if (!wrapper.querySelector('.contact-phone-row')) {
+                wrapper.appendChild(makeRow(''));
+            }
+            refreshRemoveState();
+        });
+
+        if (!wrapper.querySelector('.contact-phone-row')) {
+            wrapper.appendChild(makeRow(''));
+        }
+        refreshRemoveState();
+    })();
+
+</script>

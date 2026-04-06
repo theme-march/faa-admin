@@ -1,0 +1,26 @@
+{
+  "5": {
+    "invoice_title": "Event-wise Invoice Design",
+    "contact_details": "Bangladesh | 01678140000 | Rahman.mushfique@gmail.com",
+    "logo_path": "public/uploads/event-invoice-logos/event-invoice-logo-1774853948917.png",
+    "updated_at": "2026-03-30T07:02:04.913Z"
+  },
+  "10": {
+    "invoice_title": "asdasdsaasdasd",
+    "contact_details": "asd",
+    "logo_path": "",
+    "updated_at": "2026-03-30T06:55:26.719Z"
+  },
+  "11": {
+    "invoice_title": "",
+    "contact_details": "",
+    "logo_path": "public/uploads/event-invoice-logos/event-invoice-logo-1774853066136.jpg",
+    "updated_at": "2026-04-02T09:25:30.743Z"
+  },
+  "12": {
+    "invoice_title": "",
+    "contact_details": "",
+    "logo_path": "public/uploads/event-invoice-logos/event-invoice-logo-1774853907660.jpg",
+    "updated_at": "2026-03-30T06:58:27.728Z"
+  }
+}

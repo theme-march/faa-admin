@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-K6/7eRHQC6F+2cdkj0wZdr4NdVRGHI9v7txUBHtV2WrD4NTe/IcC9Zm7j5KUQJz/rWVvKsqW0Hby4Q1DC8nKQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: #f3f4f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .info, .payment {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ececec;
+            border-radius: 6px;
+            background: #f9fafb;
+            margin-bottom: 20px;
+        }
+
+        .info p, .payment p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .info strong, .payment strong {
+            color: #1abc9c;
+        }
+
+        .message {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            color: #34495e;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            color: #fff;
+        }
+
+        .enter-button {
+            background: #3498db;
+        }
+
+        .enter-button:hover {
+            background: #2980b9;
+        }
+
+        .reset-button {
+            background: #e67e22;
+        }
+
+        .reset-button:hover {
+            background: #ca6b18;
+        }
+
+        @media (max-width: 768px) {
+            .info p, .payment p {
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Event Entry</h1>
+    <% if (participant) { %>
+        <% if (requiresPasscode) { %>
+            <p class="message"><%= message %></p>
+            <form method="GET" action="/event/enter" class="info">
+                <input type="hidden" name="id" value="<%= participant.id %>">
+                <label for="passcode"><strong>Event Entry Password</strong></label>
+                <input
+                    id="passcode"
+                    name="passcode"
+                    type="text"
+                    autocomplete="off"
+                    required
+                    style="padding:10px;border:1px solid #d1d5db;border-radius:6px;"
+                    placeholder="Enter password from your profile/PDF"
+                />
+                <button type="submit" class="enter-button" style="margin-top:8px;">Open Entry Page</button>
+            </form>
+        <% } else { %>
+        <div class="info">
+            <p><strong>Event:</strong> <%= participant.event_title %></p>
+            <p><strong>Date:</strong> <%= participant.event_date %></p>
+            <p><strong>Venue:</strong> <%= participant.event_venue %></p>
+            <p><strong>Name:</strong> <%= participant.full_name %></p>
+            <p><strong>Email:</strong> <%= participant.email_address %></p>
+            <p><strong>Phone:</strong> <%= participant.phone_number %></p>
+            <p><strong>Entry Time:</strong> <%= participant.enter_date_time ? participant.enter_date_time : 'Not entered yet' %></p>
+        </div>
+
+        <div class="payment">
+            <h3>Payment Information</h3>
+            <p><strong>Payment Status:</strong> <%= participant.tx_status %></p>
+            <p><strong>Payment Type:</strong> <%= participant.payment_type ? participant.payment_type : 'Not specified' %></p>
+            <p><strong>Transaction Date:</strong> <%= participant.tx_tran_date ? participant.tx_tran_date : 'N/A' %></p>
+            <p><strong>Paid Amount:</strong> <%= participant.pay_amount ? `${participant.pay_amount} Taka` : 'Not paid' %></p>
+        </div>
+
+        <p class="message"><%= message %></p>
+
+        <% if (showEnterButton) { %>
+            <div class="action-buttons">
+                <% if (showEnterButton) { %>
+                    <form action="/event/enter" method="POST" id="enterForm">
+                        <input type="hidden" id="event_id" name="id" value="<%= participant.id %>">
+                        <input type="hidden" id="entry_passcode" name="passcode" value="<%= enteredPasscode || '' %>">
+                        <button type="submit" class="enter-button"><i class="fa fa-sign-in-alt"></i> Enter Event</button>
+                    </form>
+                <% } %>
+            </div>
+        <% } %>
+        <% } %>
+    <% } else { %>
+        <p class="message"><%= message %></p>
+    <% } %>
+</div>
+
+<script>
+    document.getElementById('enterForm')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var event_id = document.getElementById("event_id").value;
+        const response = await fetch('/event/enter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: event_id,
+                passcode: document.getElementById("entry_passcode")?.value || ""
+            }),
+        });
+
+        const result = await response.json();
+        alert(result.message);
+        if (result.success) location.reload();
+    });
+
+</script>
+</body>
+</html>

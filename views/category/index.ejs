@@ -1,0 +1,146 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Category</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+
+    <!-- Style combinations -->
+    <div class="card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Category list</h5>
+        </div>
+
+        <div class="card-body">
+            <button onclick="location.href='/category/add'" type="button" class="btn btn-primary">
+                <i class="icon-plus2  mr-2"></i>
+                Add
+            </button>
+        </div>
+
+        <table id="list" class="table datatable-basic table-bordered table-striped table-hover">
+            <thead>
+            <tr>
+                <th>Category Name</th>
+                <th>Prefix</th>
+                <th>Membership Fee</th>
+                <th>Membership Validity</th>
+                <th>Status</th>
+                <th class="text-center">Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+    <!-- /style combinations -->
+
+
+
+</div>
+<!-- /content area -->
+
+
+<script>
+    $(document).ready(function() {
+
+        function dataLoad() {
+            $('#list').DataTable( {
+                "processing": true,
+                "serverSide": true,
+                "ordering": false,
+                "search": true,
+                "destroy": true,
+                "pageLength": 50,
+                "language": {
+                    "searchPlaceholder": "Filter by category name"
+                },
+                "ajax": {
+                    "url": "/category/data_list",
+                    "type": "POST",
+                    "datatype": "json",
+                },
+                "createdRow": function( row, data, dataIndex ) {
+                    if ( Number(data.status) === 1 ) {
+                        $('td:eq(4)', row).html('<span class="badge badge-success">Published</span>');
+                    }else{
+                        $('td:eq(4)', row).html('<span class="badge badge-secondary">Unpublished</span>');
+                    }
+
+                    if (String(data.membership_type || "").toLowerCase() === "lifetime") {
+                        $('td:eq(3)', row).html('<span class="badge badge-primary">Lifetime</span>');
+                    } else {
+                        $('td:eq(3)', row).html('<span class="badge badge-info">' + (data.membership_validity_label || "365 Day(s)") + '</span>');
+                    }
+                },
+                "columns": [
+                    { "data": "category_name" },
+                    { "data": "membership_number_prefix" },
+                    { "data": "category_price" },
+                    { "data": "membership_validity_label" },
+                    { "data": "status" },
+                    { "data": "action" },
+                ]
+            });
+        }
+
+        dataLoad();
+
+        // Custom bootbox dialog with form
+        $("#list").on('click', '#delete', function () {
+            var delid = $(this).attr('data-delete-id');
+            bootbox.confirm({
+                title: 'Delete',
+                message: 'Do you want to delete?',
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'No',
+                        className: 'btn-link'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "post",
+                            url: "/category/del",
+                            data: { del_id: delid },
+                            datatype: "json",
+                            traditional: true,
+                            success: function (data) {
+                                if (data.success) {
+                                    window.location.href = "/category";
+                                } else {
+                                    bootbox.alert({
+                                        title: 'Delete Faild!',
+                                        message: data.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+
+        $("#filter").click(function(){
+            dataLoad();
+        });
+
+
+    });
+</script>

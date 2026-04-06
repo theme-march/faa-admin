@@ -1,0 +1,127 @@
+<!--views/collection_of_payments/index.ejs-->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Collection Of Payments</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card collection-payments-card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Collection Of Payments</h5>
+        </div>
+
+        <div class="card-body">
+            <div class="collection-payments-toolbar">
+                <div class="filter-container collection-payments-filters">
+                    <div class="collection-filter-item">
+                        <label for="event-filter">Source</label>
+                        <select id="event-filter" class="form-control">
+                            <option value="">All</option>
+                            <option value="Membership Payment">Membership Payment</option>
+                            <option value="Donation">Donation</option>
+                            <option value="Event">Event</option>
+                        </select>
+                    </div>
+                    <div class="collection-filter-item">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date" class="form-control">
+                    </div>
+                    <div class="collection-filter-item">
+                        <label for="end-date">End Date</label>
+                        <input type="date" id="end-date" class="form-control">
+                    </div>
+                </div>
+                <button id="download-excel" class="btn btn-success">Download Excel</button>
+            </div>
+        </div>
+
+        <div class="collection-total-box">
+            <h5>Total Amount: <span id="total-amount">৳ 0.00</span></h5>
+        </div>
+
+        <table id="list" class="table datatable-basic table-bordered table-striped table-hover">
+            <thead>
+            <tr>
+                <th>Source</th>
+                <th>Member ID</th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Organization</th>
+                <th>Session</th>
+                <th>Member Type</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Amount</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        if ($.fn.dataTable.isDataTable('#list')) {
+            $('#list').DataTable().clear().destroy();
+        }
+
+        $('#list').DataTable({
+            processing: true,
+            serverSide: true,
+            language: {
+                searchPlaceholder: "Filter by Mobile"
+            },
+            ajax: {
+                url: '/collection-payments-data',
+                type: 'GET',
+                data: function (d) {
+                    d.source_type = $('#event-filter').val();
+                    d.start_date = $('#start-date').val();
+                    d.end_date = $('#end-date').val();
+                },
+                dataSrc: function (json) {
+                    const totalAmount = Number(json.totalAmount || 0);
+                    $('#total-amount').text(`৳ ${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+                    return json.data || [];
+                }
+            },
+            columns: [
+                { data: 'source' },
+                { data: 'member_id', defaultContent: '' },
+                { data: 'student_id', defaultContent: '' },
+                { data: 'name' },
+                { data: 'organization_name', defaultContent: '' },
+                { data: 'session', defaultContent: '' },
+                { data: 'member_type', defaultContent: '' },
+                { data: 'phone_number', defaultContent: '' },
+                { data: 'email_address', defaultContent: '' },
+                {
+                    data: 'pay_amount',
+                    render: function(value) {
+                        const amount = Number(String(value || '0').replace(/,/g, ''));
+                        return `৳ ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    }
+                }
+            ]
+        });
+
+        $('#download-excel').on('click', function () {
+            const source = $('#event-filter').val();
+            const start = $('#start-date').val();
+            const end = $('#end-date').val();
+            const url = `/collection-payments-excel?source_type=${source}&start_date=${start}&end_date=${end}`;
+            window.location.href = url;
+        });
+
+        $('#event-filter, #start-date, #end-date').on('change', function () {
+            $('#list').DataTable().ajax.reload();
+        });
+    });
+</script>

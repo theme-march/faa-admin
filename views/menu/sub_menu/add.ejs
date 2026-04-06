@@ -1,0 +1,91 @@
+<!-- Page header -->
+<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <a href="/menu" class="breadcrumb-item"> Main Menu List</a>
+                <a href="/menu/sub_menu?parent_id=<%=parent_id%>" class="breadcrumb-item"> Sub Menu List</a>
+                <span class="breadcrumb-item active">Add Sub Menu</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /page header -->
+
+<!-- Content area -->
+<div class="content">
+    <!-- Vertical form options -->
+    <div class="row">
+        <div class="col-md-6">
+
+            <!-- Basic layout-->
+            <div class="card">
+                <div class="card-header header-elements-inline">
+                    <h5 class="card-title">Add Sub Menu</h5>
+                </div>
+
+                <% if (messages.error) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-danger alert-styled-left alert-dismissible">
+                        <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+                    </div>
+                <% } %>
+
+                <% if (messages.success) { %>
+                    <div style="margin: 0 20px 0 20px" class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible">
+                        <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+                    </div>
+                <% } %>
+
+                <div class="card-body">
+                    <form action="/menu/sub_menu/add" method="post" name="form1">
+                        <input type="hidden" name="parent_id" value="<%- parent_id %>">
+
+                        <div class="form-group">
+                            <label>Sub Menu Name: </label>
+                            <input type="text" name="menu_name" value="<%= menu_name %>" class="form-control" placeholder="Sub Menu Nme">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='menu_name').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Sub Menu Url: </label>
+                            <input type="text" name="menu_url" value="<%= menu_url %>" class="form-control" placeholder="Sub Menu Url">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='menu_url').msg %></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Order by: </label>
+                            <input type="text" name="order_by" value="<%= order_by %>" class="form-control" placeholder="Order by">
+                            <span class="form-text text-danger"><%= validation.find(e=>e.param==='order_by').msg %></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status: </label>
+                            <select name="status" class="form-control select-fixed-single" data-fouc>
+                                <% if (status == 0){%>
+                                    <option value="1">Published</option>
+                                    <option value="0" selected>Unpublished</option>
+                                <%}else if(status == 1){%>
+                                    <option value="1" selected>Published</option>
+                                    <option value="0">Unpublished</option>
+                                <%}else{%>
+                                    <option value="1" selected>Published</option>
+                                    <option value="0">Unpublished</option>
+                                <%}%>
+                            </select>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">Add
+                                <i class="icon-paperplane ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- /basic layout -->
+
+        </div>
+    </div>
+    <!-- /vertical form options -->
+</div>
+<!-- /content area -->

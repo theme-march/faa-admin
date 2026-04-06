@@ -1,0 +1,125 @@
+﻿<div class="page-header page-header-light">
+    <div class="breadcrumb-line breadcrumb-line-light header-elements-md-inline">
+        <div class="d-flex">
+            <div class="breadcrumb">
+                <a href="/" class="breadcrumb-item"><i class="icon-home2 mr-2"></i> Home</a>
+                <span class="breadcrumb-item active">Event Sponsor Registration</span>
+            </div>
+            <a href="#" class="header-elements-toggle text-default d-md-none"><i class="icon-more"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <% if (messages.error) { %>
+        <div class="alert alert-danger alert-styled-left alert-dismissible mb-3">
+            <span class="font-weight-semibold">Error!</span> <%- messages.error %>
+        </div>
+    <% } %>
+
+    <% if (messages.success) { %>
+        <div class="alert alert-success alert-styled-left alert-arrow-left alert-dismissible mb-3">
+            <span class="font-weight-semibold">Success!</span> <%- messages.success %>
+        </div>
+    <% } %>
+
+    <div class="card">
+        <div class="card-header header-elements-inline">
+            <h5 class="card-title">Event Sponsor Registration List</h5>
+            <div class="header-elements">
+                <form id="bulk-delete-form" action="/event-sponsor-registration/bulk-delete" method="post" class="d-inline-block mr-2">
+                    <input type="hidden" name="selected_ids" id="selected-sponsor-ids">
+                    <button type="submit" id="bulk-delete-button" class="btn btn-danger" disabled>Delete Selected</button>
+                </form>
+                <a href="/event-sponsor-registration/download-excel" class="btn btn-success">
+                    Download Excel
+                </a>
+            </div>
+        </div>
+
+        <table id="list" class="table datatable-basic table-bordered table-striped table-hover">
+            <thead>
+            <tr>
+                <th style="width: 50px;">
+                    <input type="checkbox" id="select-all-sponsors">
+                </th>
+                <th>Event</th>
+                <th>Name</th>
+                <th>Organization</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Amount</th>
+                <th>Payment Type</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        var table = $('#list').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ordering": false,
+            "search": true,
+            "destroy": true,
+            "pageLength": 50,
+            "searching": true,
+            "ajax": {
+                "url": "/event-sponsor-registration/data-list",
+                "type": "POST",
+                "datatype": "json"
+            },
+            "columns": [
+                { "data": "select_checkbox", "orderable": false, "searchable": false },
+                { "data": "event_title" },
+                { "data": "distributor_name" },
+                { "data": "organization_name" },
+                { "data": "email" },
+                { "data": "phone_number" },
+                { "data": "approximately_amount" },
+                { "data": "payment_type" },
+                { "data": "status_label" },
+                { "data": "action" }
+            ]
+        });
+
+        function updateBulkDeleteState() {
+            var selectedIds = $('.sponsor-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+            $('#selected-sponsor-ids').val(JSON.stringify(selectedIds));
+            $('#bulk-delete-button').prop('disabled', selectedIds.length === 0);
+        }
+
+        $('#list').on('change', '.sponsor-checkbox', function() {
+            var totalVisible = $('.sponsor-checkbox').length;
+            var checkedVisible = $('.sponsor-checkbox:checked').length;
+            $('#select-all-sponsors').prop('checked', totalVisible > 0 && totalVisible === checkedVisible);
+            updateBulkDeleteState();
+        });
+
+        $('#select-all-sponsors').on('change', function() {
+            $('.sponsor-checkbox').prop('checked', $(this).is(':checked'));
+            updateBulkDeleteState();
+        });
+
+        $('#bulk-delete-form').on('submit', function() {
+            updateBulkDeleteState();
+            if (!$('#selected-sponsor-ids').val() || $('#selected-sponsor-ids').val() === '[]') {
+                alert('Please select at least one sponsor registration.');
+                return false;
+            }
+            return confirm('Delete selected sponsor registrations permanently?');
+        });
+
+        table.on('draw', function() {
+            $('#select-all-sponsors').prop('checked', false);
+            updateBulkDeleteState();
+        });
+    });
+</script>
