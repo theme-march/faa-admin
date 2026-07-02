@@ -24,7 +24,7 @@ var app = express();
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: ["http://139.162.11.50:3000"],
+  origin: ["https://cms.faa-dubd.org"],
   credentials: true,
 }));
 

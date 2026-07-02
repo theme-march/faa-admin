@@ -1,13 +1,17 @@
 ﻿const SSLCommerzPayment = require('sslcommerz-lts')
-const {sequelize, DonationModel, MemberShipPaymentModel, EventRegisterModel, EventSponsorModel, MemberModel} = require("../models");
-const {QueryTypes} = require("sequelize");
+const { sequelize, DonationModel, MemberShipPaymentModel, EventRegisterModel, EventSponsorModel, MemberModel } = require("../models");
+const { QueryTypes } = require("sequelize");
 const { getPaymentConfig } = require("./payment_settings/PaymentSettings");
 const { sendEventRegistrationInvoice } = require("../services/eventInvoiceMailer");
 
-function getCallbackBaseUrl(req) {
-  const forwardedProto = req.headers["x-forwarded-proto"];
-  const protocol = forwardedProto || req.protocol || "http";
-  return `${protocol}://${req.get("host")}`;
+// function getCallbackBaseUrl(req) {
+//   const forwardedProto = req.headers["x-forwarded-proto"];
+//   const protocol = forwardedProto || req.protocol || "http";
+//   return `${protocol}://${req.get("host")}`;
+// }
+
+function getCallbackBaseUrl(paymentConfig) {
+  return normalizeBaseUrl(paymentConfig.site_url) || "https://faa-dubd.org";
 }
 
 function normalizeBaseUrl(url) {
@@ -125,9 +129,9 @@ exports.sslPaymentMembership = async (req, res, next) => {
       }
     }
 
-    const callbackBaseUrl = getCallbackBaseUrl(req);
+    const callbackBaseUrl = getCallbackBaseUrl(paymentConfig);
     const eventRegisterInsert = await MemberShipPaymentModel.create(insertData);
-    if(eventRegisterInsert){
+    if (eventRegisterInsert) {
       const data = {
         total_amount: req.body.pay_amount,
         currency: 'BDT',
@@ -172,7 +176,7 @@ exports.sslPaymentMembership = async (req, res, next) => {
           url: GatewayPageURL,
         });
       });
-    }else{
+    } else {
       return res.status(200).json({
         success: false,
         message: "Server Error !"
@@ -235,9 +239,10 @@ exports.sslPayment = async (req, res, next) => {
       }
     }
 
-    const callbackBaseUrl = getCallbackBaseUrl(req);
+    // const callbackBaseUrl = getCallbackBaseUrl(req);
+    const callbackBaseUrl = getCallbackBaseUrl(paymentConfig);
     const eventRegisterInsert = await DonationModel.create(insertData);
-    if(eventRegisterInsert){
+    if (eventRegisterInsert) {
       const data = {
         total_amount: req.body.pay_amount,
         currency: 'BDT',
@@ -280,7 +285,7 @@ exports.sslPayment = async (req, res, next) => {
           url: GatewayPageURL,
         });
       });
-    }else{
+    } else {
       return res.status(200).json({
         success: false,
         message: "Server Error !"
@@ -300,9 +305,9 @@ exports.sslPaymentValidate = async (req, res, next) => {
   const redirectBaseUrl = normalizeBaseUrl(paymentConfig.site_url) || "/";
 
   try {
-    if(req.body.status){
+    if (req.body.status) {
       let updateData = {}
-      if(req.body.status === "VALID"){
+      if (req.body.status === "VALID") {
         updateData = {
           is_pay: 1,
           tx_status: req.body.status,
@@ -317,7 +322,7 @@ exports.sslPaymentValidate = async (req, res, next) => {
           card_no: req.body.card_no,
           tx_json_response: JSON.stringify(req.body)
         }
-      }else{
+      } else {
         updateData = {
           tx_status: req.body.status,
           tx_tran_date: req.body.tran_date,
@@ -332,19 +337,19 @@ exports.sslPaymentValidate = async (req, res, next) => {
         }
       }
       let update_date = null;
-      if(req.body.value_a === "event"){
-        update_date = await EventRegisterModel.update(updateData, {where: {id: req.body.tran_id}});
-        const eventDetails = await EventRegisterModel.findOne({ where: {id: req.body.tran_id}});
-        if(eventDetails && eventDetails.member_id){
-          if(Number(eventDetails.membership_renew_fees) !== 0){
-            if(req.body.status === "VALID"){
+      if (req.body.value_a === "event") {
+        update_date = await EventRegisterModel.update(updateData, { where: { id: req.body.tran_id } });
+        const eventDetails = await EventRegisterModel.findOne({ where: { id: req.body.tran_id } });
+        if (eventDetails && eventDetails.member_id) {
+          if (Number(eventDetails.membership_renew_fees) !== 0) {
+            if (req.body.status === "VALID") {
               await MemberModel.update(
                 {
                   is_pay: 1,
                   amount: eventDetails.membership_renew_fees,
                   approved_at: new Date(),
                 },
-                {where: {id: eventDetails.member_id}}
+                { where: { id: eventDetails.member_id } }
               );
             }
           }
@@ -354,38 +359,38 @@ exports.sslPaymentValidate = async (req, res, next) => {
             console.log("Event invoice email send failed:", emailError.message);
           });
         }
-      }else if(req.body.value_a === "membership"){
-        update_date = await MemberShipPaymentModel.update(updateData, {where: {id: req.body.tran_id}});
-        if(req.body.status === "VALID"){
+      } else if (req.body.value_a === "membership") {
+        update_date = await MemberShipPaymentModel.update(updateData, { where: { id: req.body.tran_id } });
+        if (req.body.status === "VALID") {
           await MemberModel.update(
             {
               is_pay: 1,
               amount: req.body.amount,
               approved_at: new Date(),
             },
-            {where: {id: req.body.value_b}}
+            { where: { id: req.body.value_b } }
           );
         }
-      }else if(req.body.value_a === "event_sponsor"){
-        update_date = await EventSponsorModel.update(updateData, {where: {id: req.body.tran_id}});
-      }else{
-        update_date = await DonationModel.update(updateData, {where: {id: req.body.tran_id}});
+      } else if (req.body.value_a === "event_sponsor") {
+        update_date = await EventSponsorModel.update(updateData, { where: { id: req.body.tran_id } });
+      } else {
+        update_date = await DonationModel.update(updateData, { where: { id: req.body.tran_id } });
       }
 
-      if(update_date){
-        if(req.body.status === "VALID"){
+      if (update_date) {
+        if (req.body.status === "VALID") {
           return res.redirect(buildFrontendRedirectUrl(redirectBaseUrl, "success", req.body.tran_id));
-        }else if(req.body.status === "FAILED"){
+        } else if (req.body.status === "FAILED") {
           return res.redirect(buildFrontendRedirectUrl(redirectBaseUrl, "fail", req.body.tran_id));
-        }else if(req.body.status === "CANCELLED"){
+        } else if (req.body.status === "CANCELLED") {
           return res.redirect(buildFrontendRedirectUrl(redirectBaseUrl, "cancel", req.body.tran_id));
-        }else if(req.body.status === "UNATTEMPTED"){
+        } else if (req.body.status === "UNATTEMPTED") {
           return res.redirect(buildFrontendRedirectUrl(redirectBaseUrl, "fail", req.body.tran_id));
-        }else if(req.body.status === "EXPIRED"){
+        } else if (req.body.status === "EXPIRED") {
           return res.redirect(buildFrontendRedirectUrl(redirectBaseUrl, "fail", req.body.tran_id));
         }
       }
-    }else{
+    } else {
       return res.redirect(buildFrontendRedirectUrl(redirectBaseUrl, "fail", req.body.tran_id));
     }
   } catch (error) {
@@ -408,19 +413,19 @@ exports.redirectFrontendPaymentPage = async (req, res, next, pageName) => {
 
 exports.sslPaymentStatus = async (req, res, next) => {
   if (req.query.tr_id) {
-    const dataDetails = await DonationModel.findOne({where: {id: req.query.tr_id}});
-    if(dataDetails){
+    const dataDetails = await DonationModel.findOne({ where: { id: req.query.tr_id } });
+    if (dataDetails) {
       return res.status(200).json({
         success: true,
         result: dataDetails,
       });
-    }else{
+    } else {
       return res.status(200).json({
         success: true,
         message: "Data not found",
       });
     }
-  }else{
+  } else {
     return res.status(200).json({
       success: true,
       message: "tr_id is empty",
