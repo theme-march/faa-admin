@@ -1081,19 +1081,10 @@ function membershipPaymentBelongsToViewer(payment, viewerMember) {
   const paymentMemberId = String(payment.member_id || "").trim();
   const viewerId = String(viewerMember.id || "").trim();
   const viewerMembershipNumber = String(viewerMember.membership_number || "").trim();
-  const paymentEmail = String(payment.email_address || "").trim().toLowerCase();
-  const viewerEmail = String(viewerMember.email || "").trim().toLowerCase();
-  const paymentPhone = normalizePhone(payment.phone_number);
-  const viewerPhone = normalizePhone(viewerMember.phone_number);
-  const paymentName = String(payment.name || "").trim().toLowerCase();
-  const viewerName = String(viewerMember.name || "").trim().toLowerCase();
 
   return (
     (viewerId && paymentMemberId && paymentMemberId === viewerId) ||
-    (viewerMembershipNumber && paymentMemberId && paymentMemberId === viewerMembershipNumber) ||
-    (viewerEmail && paymentEmail && paymentEmail === viewerEmail) ||
-    (viewerPhone && paymentPhone && paymentPhone === viewerPhone) ||
-    (viewerName && paymentName && paymentName === viewerName)
+    (viewerMembershipNumber && paymentMemberId && paymentMemberId === viewerMembershipNumber)
   );
 }
 
@@ -1249,9 +1240,6 @@ exports.UserDetails = async (req, res, next) => {
               AND (
                 (:memberId <> '' AND CAST(mp.member_id AS CHAR) = :memberId)
                 OR (:membershipNumber <> '' AND CAST(mp.member_id AS CHAR) = :membershipNumber)
-                OR (:email <> '' AND LOWER(COALESCE(mp.email_address, '')) = LOWER(:email))
-                OR (:phoneNumber <> '' AND REPLACE(COALESCE(mp.phone_number, ''), ' ', '') = REPLACE(:phoneNumber, ' ', ''))
-                OR (:memberName <> '' AND LOWER(COALESCE(mp.name, '')) = LOWER(:memberName))
               )
             ORDER BY mp.id DESC
             LIMIT 200

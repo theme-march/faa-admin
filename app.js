@@ -22,10 +22,51 @@ var apiRouter = require('./routes/api');
 
 var app = express();
 
-// Enable CORS for all routes
+const allowedOrigins = new Set([
+  "https://cms.faa-dubd.org",
+  "https://faa-dubd.org",
+  "http://faa-dubd.org",
+  "https://www.faa-dubd.org",
+  "http://www.faa-dubd.org",
+  "http://localhost:3001",
+  "http://127.0.0.1:3001",
+  "http://139.162.11.50:3001",
+  "https://139.162.11.50:3001",
+]);
+
+function isAllowedOrigin(origin = "") {
+  if (allowedOrigins.has(origin)) return true;
+
+  try {
+    const parsed = new URL(origin);
+    const hostname = String(parsed.hostname || "").toLowerCase();
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return true;
+    }
+
+    if (hostname === "faa-dubd.org" || hostname.endsWith(".faa-dubd.org")) {
+      return true;
+    }
+  } catch (error) {
+    return false;
+  }
+
+  return false;
+}
+
+// Enable CORS for admin API requests coming from the frontend site,
+// local member app, and CMS itself.
 app.use(cors({
-  origin: ["https://cms.faa-dubd.org"],
+  origin(origin, callback) {
+    if (!origin || isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 app.use("/images", express.static("public"));
