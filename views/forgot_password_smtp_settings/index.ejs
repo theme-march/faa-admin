@@ -11,12 +11,55 @@
     </div>
 </div>
 
-<div class="content">
+<style>
+    .forgot-password-smtp-page .card {
+        border-radius: 14px;
+        border: 1px solid #dbe4f0;
+    }
+
+    .forgot-password-smtp-page .page-subtitle {
+        margin-top: 4px;
+        margin-bottom: 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .forgot-password-smtp-page .helper-box {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        margin-bottom: 16px;
+    }
+
+    .forgot-password-smtp-page .helper-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .forgot-password-smtp-page .helper-chip {
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: #3730a3;
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+
+<div class="content forgot-password-smtp-page">
     <div class="row">
         <div class="col-md-9">
             <div class="card">
                 <div class="card-header header-elements-inline">
-                    <h5 class="card-title">Forgot Password SMTP Settings</h5>
+                    <div>
+                        <h5 class="card-title mb-0">Forgot Password SMTP Settings</h5>
+                        <p class="page-subtitle">Configure the email server used only for member password reset emails.</p>
+                    </div>
                 </div>
 
                 <% if (messages.error) { %>
@@ -33,6 +76,17 @@
 
                 <div class="card-body">
                     <form action="/forgot-password-smtp-settings" method="post" name="forgotPasswordSmtpForm">
+                        <div class="helper-box">
+                            <div class="font-weight-semibold mb-2">Easy setup guide</div>
+                            <div class="text-muted">
+                                This SMTP is only for forgot-password emails.<br>
+                                Common setup example: host <code>mail.privateemail.com</code>, port <code>465</code>, secure <code>Yes</code>.
+                            </div>
+                            <div class="helper-actions">
+                                <button type="button" class="helper-chip js-forgot-smtp-fill" data-host="mail.privateemail.com" data-port="465" data-secure="1">Use Common SMTP</button>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -51,7 +105,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label>Secure</label>
-                                    <select name="smtp_secure" class="form-control select-fixed-single" data-fouc>
+                                    <select id="forgot-smtp-secure" name="smtp_secure" class="form-control select-fixed-single" data-fouc>
                                         <% if (String(smtp_secure) === '1'){%>
                                             <option value="1" selected>Yes</option>
                                             <option value="0">No</option>
@@ -65,7 +119,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label>SMTP Port</label>
-                                    <input type="number" min="1" max="65535" name="smtp_port" value="<%= smtp_port %>" class="form-control" required>
+                                    <input type="number" min="1" max="65535" id="forgot-smtp-port" name="smtp_port" value="<%= smtp_port %>" class="form-control" placeholder="465" required>
                                 </div>
                             </div>
                         </div>
@@ -74,7 +128,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>SMTP Host</label>
-                                    <input type="text" name="smtp_host" value="<%= smtp_host %>" class="form-control" placeholder="mail.example.com" required>
+                                    <input type="text" id="forgot-smtp-host" name="smtp_host" value="<%= smtp_host %>" class="form-control" placeholder="mail.privateemail.com" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -139,3 +193,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var smtpHost = document.getElementById("forgot-smtp-host");
+        var smtpPort = document.getElementById("forgot-smtp-port");
+        var smtpSecure = document.getElementById("forgot-smtp-secure");
+
+        document.querySelectorAll(".js-forgot-smtp-fill").forEach(function (button) {
+            button.addEventListener("click", function () {
+                if (smtpHost) smtpHost.value = button.getAttribute("data-host") || "";
+                if (smtpPort) smtpPort.value = button.getAttribute("data-port") || "";
+                if (smtpSecure) smtpSecure.value = button.getAttribute("data-secure") || "1";
+                if (window.jQuery && window.jQuery.fn.select2) {
+                    window.jQuery(smtpSecure).trigger("change");
+                }
+            });
+        });
+    });
+</script>

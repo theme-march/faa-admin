@@ -6,18 +6,30 @@ const {
   saveEventOverride,
 } = require("../../services/eventInvoiceEventOverrides");
 
-const LEGACY_LIVE_SITE_URL = "https://faa-dubd.org";
-const LEGACY_LIVE_QR_BASE_URL = "https://faa-dubd.org/event/enter?id=";
+const LIVE_FRONTEND_URL = "https://faa-dubd.org";
+const LEGACY_LIVE_SITE_URL = LIVE_FRONTEND_URL;
+const LEGACY_LIVE_QR_BASE_URL = `${LIVE_FRONTEND_URL}/event/enter?id=`;
 const LEGACY_LOCAL_FRONTEND_QR_BASE_URL = "http://localhost:3001/event/enter?id=";
+const LEGACY_LOCAL_ADMIN_QR_BASE_URL = "http://localhost:3000/event/enter?id=";
+const LEGACY_LOCAL_SITE_URLS = new Set([
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://localhost:3000",
+  "https://localhost:3001",
+]);
 
 function normalizeBaseUrl(url, fallback) {
   const value = String(url || "").trim();
   if (!value) return fallback;
-  return value.replace(/\/+$/, "");
+  const normalized = value.replace(/\/+$/, "");
+  if (LEGACY_LOCAL_SITE_URLS.has(normalized)) {
+    return fallback;
+  }
+  return normalized;
 }
 
 function buildQrBaseUrlFromSite(siteUrl) {
-  return `${normalizeBaseUrl(siteUrl, "http://localhost:3000")}/event/enter?id=`;
+  return `${normalizeBaseUrl(siteUrl, LIVE_FRONTEND_URL)}/event/enter?id=`;
 }
 
 function shouldRepairLegacyQrBaseUrl(settings) {
@@ -26,13 +38,14 @@ function shouldRepairLegacyQrBaseUrl(settings) {
   if (!qrBaseUrl) return true;
   if (qrBaseUrl === LEGACY_LIVE_QR_BASE_URL) return true;
   if (qrBaseUrl === LEGACY_LOCAL_FRONTEND_QR_BASE_URL) return true;
+  if (qrBaseUrl === LEGACY_LOCAL_ADMIN_QR_BASE_URL) return true;
 
   return false;
 }
 
 const DEFAULT_SITE_URL = normalizeBaseUrl(
-  process.env.BACKEND_BASE_URL || process.env.SITE_URL,
-  "http://localhost:3000"
+  process.env.FRONTEND_BASE_URL || LIVE_FRONTEND_URL,
+  LIVE_FRONTEND_URL
 );
 const DEFAULT_LOGO_PATH = "public/global_assets/images/banner-logo.jpg";
 
@@ -82,8 +95,11 @@ async function getOrCreateSettings() {
   }
 
   const plain = settings.get({ plain: true });
-  if (shouldRepairLegacyQrBaseUrl(plain)) {
-    const nextSiteUrl = plain.site_url === LEGACY_LIVE_SITE_URL ? DEFAULT_SITE_URL : (plain.site_url || DEFAULT_SITE_URL);
+  const shouldRepairSiteUrl = !plain.site_url || LEGACY_LOCAL_SITE_URLS.has(String(plain.site_url).trim());
+  if (shouldRepairLegacyQrBaseUrl(plain) || shouldRepairSiteUrl) {
+    const nextSiteUrl = shouldRepairSiteUrl
+      ? DEFAULT_SITE_URL
+      : normalizeBaseUrl(plain.site_url || DEFAULT_SITE_URL, DEFAULT_SITE_URL);
     const nextQrBaseUrl = buildQrBaseUrlFromSite(nextSiteUrl);
     await settings.update({
       site_url: normalizeBaseUrl(nextSiteUrl, DEFAULT_SITE_URL),
@@ -195,9 +211,9 @@ exports.edit = async (req, res, next) => {
         email_body: req.body.email_body,
         invoice_title: req.body.invoice_title,
         contact_details: req.body.contact_details,
-        qr_base_url: req.body.qr_base_url,
+        qr_base_url: String(req.body.qr_base_url || "").trim() || buildQrBaseUrlFromSite(req.body.site_url),
         logo_path: normalizeLogoPath(nextLogoPath),
-        site_url: req.body.site_url,
+        site_url: normalizeBaseUrl(req.body.site_url, DEFAULT_SITE_URL),
       },
       { where: { id: settings.id } }
     );

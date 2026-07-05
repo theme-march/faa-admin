@@ -37,6 +37,7 @@ const AboutUsMessage = require('../controllers/about_us_message/AboutUsMessage')
 const YoutubeVideo = require('../controllers/youtube_video/YoutubeVideo');
 const PaymentSettings = require('../controllers/payment_settings/PaymentSettings');
 const EventInvoiceSettings = require('../controllers/event_invoice_settings/EventInvoiceSettings');
+const MembershipInvoiceSettings = require('../controllers/MembershipInvoiceSettings');
 const ForgotPasswordSmtpSettings = require('../controllers/forgot_password_smtp_settings/ForgotPasswordSmtpSettings');
 const FooterSettings = require('../controllers/footer_settings/FooterSettings');
 const Payment = require("../controllers/payment");
@@ -103,6 +104,26 @@ const invoiceLogoStorage = multer.diskStorage({
 
 const invoiceLogoUpload = multer({
   storage: invoiceLogoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+const membershipInvoiceLogoUploadDir = path.join(__dirname, '../public/uploads/membership-invoice-logos');
+if (!fs.existsSync(membershipInvoiceLogoUploadDir)) {
+  fs.mkdirSync(membershipInvoiceLogoUploadDir, { recursive: true });
+}
+
+const membershipInvoiceLogoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, membershipInvoiceLogoUploadDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.png';
+    cb(null, `membership-invoice-logo-${Date.now()}${ext}`);
+  }
+});
+
+const membershipInvoiceLogoUpload = multer({
+  storage: membershipInvoiceLogoStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
@@ -177,6 +198,24 @@ router.post('/event-invoice-settings', function(req, res, next) {
       return res.redirect('/event-invoice-settings');
     }
     return EventInvoiceSettings.edit(req, res, next);
+  });
+});
+
+router.get('/membership-invoice-settings', function(req, res, next) {
+  if (isLogin(req, res)) {
+    MembershipInvoiceSettings.edit_from(req, res, next);
+  }
+});
+router.post('/membership-invoice-settings', function(req, res, next) {
+  if (!isLogin(req, res)) {
+    return;
+  }
+  membershipInvoiceLogoUpload.single('membershipInvoiceLogoFile')(req, res, function (err) {
+    if (err) {
+      req.flash('error', err.message || 'Membership invoice logo upload failed.');
+      return res.redirect('/membership-invoice-settings');
+    }
+    return MembershipInvoiceSettings.edit(req, res, next);
   });
 });
 

@@ -3,6 +3,7 @@ const {
   MemberModel,
   MemberApprovalModel,
   AdminLogin,
+  MemberShipPaymentModel,
 } = require("../../models");
 const { QueryTypes } = require("sequelize");
 const multer = require("multer");
@@ -26,8 +27,9 @@ const {
   generateEventRegistrationInvoicePdf,
 } = require("../../services/eventInvoiceMailer");
 const {
-  getSettings: getForgotPasswordSmtpSettings,
-} = require("../../services/forgotPasswordSmtpSettings");
+  generateMembershipPaymentInvoicePdf,
+} = require("../../services/membershipInvoiceMailer");
+const { getSettings: getForgotPasswordSmtpSettings } = require("../../services/forgotPasswordSmtpSettings");
 
 function normalizeText(value = "") {
   return String(value || "").trim().toLowerCase();
@@ -148,7 +150,10 @@ function isValidEmail(email) {
 }
 
 function buildResetUrl(appBaseUrl, token) {
-  const fallbackBase = "http://localhost:3001";
+  const fallbackBase =
+    String(process.env.FRONTEND_BASE_URL || "https://faa-dubd.org" || process.env.SITE_URL)
+      .trim()
+      .replace(/\/+$/, "") || "https://faa-dubd.org";
   const normalizedBase = String(appBaseUrl || "")
     .trim()
     .replace(/\/+$/, "") || fallbackBase;
@@ -319,11 +324,18 @@ function resolveEffectiveApprovedDate({
 }
 
 function deriveLatestPaymentDateFromCollections({
+  membershipPayments = [],
   paidEventRegistrations = [],
   sponsorContributions = [],
   donationContributions = [],
 }) {
   const candidates = [
+    ...membershipPayments.flatMap((row) => [
+      row?.tx_tran_date,
+      row?.payment_date,
+      row?.created_date,
+      row?.created_at,
+    ]),
     ...paidEventRegistrations.flatMap((row) => [
       row?.tx_tran_date,
       row?.registration_date,
@@ -1063,6 +1075,28 @@ function registrationBelongsToViewer(registration, viewerMember) {
   );
 }
 
+function membershipPaymentBelongsToViewer(payment, viewerMember) {
+  if (!payment || !viewerMember) return false;
+
+  const paymentMemberId = String(payment.member_id || "").trim();
+  const viewerId = String(viewerMember.id || "").trim();
+  const viewerMembershipNumber = String(viewerMember.membership_number || "").trim();
+  const paymentEmail = String(payment.email_address || "").trim().toLowerCase();
+  const viewerEmail = String(viewerMember.email || "").trim().toLowerCase();
+  const paymentPhone = normalizePhone(payment.phone_number);
+  const viewerPhone = normalizePhone(viewerMember.phone_number);
+  const paymentName = String(payment.name || "").trim().toLowerCase();
+  const viewerName = String(viewerMember.name || "").trim().toLowerCase();
+
+  return (
+    (viewerId && paymentMemberId && paymentMemberId === viewerId) ||
+    (viewerMembershipNumber && paymentMemberId && paymentMemberId === viewerMembershipNumber) ||
+    (viewerEmail && paymentEmail && paymentEmail === viewerEmail) ||
+    (viewerPhone && paymentPhone && paymentPhone === viewerPhone) ||
+    (viewerName && paymentName && paymentName === viewerName)
+  );
+}
+
 exports.SaveMemberApproved = async (req, res, next) => {
   const errorHandler = (err) => {
     return res.status(200).json({
@@ -1140,8 +1174,15 @@ exports.UserDetails = async (req, res, next) => {
       });
     }
     const isSelfProfile = viewerMemberId === String(req.params.user_id);
+    let viewerState = {
+      canViewOthers: false,
+      isNotApproved: true,
+      isUnpaid: true,
+      isExpired: false,
+    };
+
     if (!isSelfProfile) {
-      const viewerState = await getViewerProfileAccessState(viewerMemberId);
+      viewerState = await getViewerProfileAccessState(viewerMemberId);
       if (!viewerState.canViewOthers) {
         return res.status(403).json({
           success: false,
@@ -1174,10 +1215,60 @@ exports.UserDetails = async (req, res, next) => {
       const memberName = String(memberDetails.name || "");
 
       let paidEventRegistrations = [];
+      let membershipPayments = [];
       let sponsorContributions = [];
       let donationContributions = [];
 
-      if (isSelfProfile) {
+      const canViewSecureData = isSelfProfile || viewerState.canViewOthers;
+
+      if (canViewSecureData) {
+        membershipPayments = await sequelize
+          .query(
+            `
+            SELECT
+              mp.id,
+              mp.member_id,
+              ml.membership_number,
+              cl.category_name AS membership_category,
+              DATE_FORMAT(mp.created_at, '%Y-%m-%d') AS payment_date,
+              mp.pay_amount,
+              COALESCE(mp.tx_status, 'PENDING') AS tx_status,
+              mp.payment_type,
+              mp.tx_tran_id AS transaction_id,
+              mp.tx_tran_date,
+              mp.card_no,
+              mp.card_brand,
+              CONCAT('/api/v1/membership-payment-invoice/', mp.id) AS invoice_url
+            FROM member_ship_payments mp
+            LEFT JOIN member_list ml
+              ON CAST(ml.id AS CHAR) = CAST(mp.member_id AS CHAR)
+              OR CAST(ml.membership_number AS CHAR) = CAST(mp.member_id AS CHAR)
+            LEFT JOIN category_list cl ON cl.id = ml.membership_category_id
+            WHERE
+              UPPER(TRIM(COALESCE(mp.tx_status, ''))) IN ('VALID', 'VALIDATED', 'SUCCESS', 'CASH_RECEIVED')
+              AND (
+                (:memberId <> '' AND CAST(mp.member_id AS CHAR) = :memberId)
+                OR (:membershipNumber <> '' AND CAST(mp.member_id AS CHAR) = :membershipNumber)
+                OR (:email <> '' AND LOWER(COALESCE(mp.email_address, '')) = LOWER(:email))
+                OR (:phoneNumber <> '' AND REPLACE(COALESCE(mp.phone_number, ''), ' ', '') = REPLACE(:phoneNumber, ' ', ''))
+                OR (:memberName <> '' AND LOWER(COALESCE(mp.name, '')) = LOWER(:memberName))
+              )
+            ORDER BY mp.id DESC
+            LIMIT 200
+          `,
+            {
+              replacements: {
+                memberId,
+                membershipNumber,
+                email,
+                phoneNumber,
+                memberName,
+              },
+              type: QueryTypes.SELECT,
+            }
+          )
+          .catch(() => []);
+
         paidEventRegistrations = await sequelize
           .query(
           `
@@ -1337,6 +1428,7 @@ exports.UserDetails = async (req, res, next) => {
       delete safeMemberDetails.refresh_token_expires_at;
 
       const derivedLastPaymentDate = deriveLatestPaymentDateFromCollections({
+        membershipPayments,
         paidEventRegistrations,
         sponsorContributions,
         donationContributions,
@@ -1363,7 +1455,8 @@ exports.UserDetails = async (req, res, next) => {
 
       const normalizedResult = {
         ...safeMemberDetails,
-        can_view_secure: isSelfProfile,
+        can_view_secure: canViewSecureData,
+        membership_payments: membershipPayments || [],
         paid_event_registrations: paidEventRegistrations || [],
         sponsor_contributions: sponsorContributions || [],
         donation_contributions: donationContributions || [],
@@ -1373,6 +1466,7 @@ exports.UserDetails = async (req, res, next) => {
         success: true,
         result: normalizedResult,
         approval_list: memberApprovalList,
+        membership_payments: membershipPayments || [],
         paid_event_registrations: paidEventRegistrations || [],
         sponsor_contributions: sponsorContributions || [],
         donation_contributions: donationContributions || [],
@@ -1682,6 +1776,109 @@ exports.downloadEventRegistrationInvoice = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+exports.downloadMembershipPaymentInvoice = async (req, res) => {
+  try {
+    const viewerMemberId = getViewerMemberId(req);
+    if (!viewerMemberId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized invoice request.",
+      });
+    }
+
+    const viewerMember = await MemberModel.findOne({
+      where: { id: viewerMemberId },
+    });
+    if (!viewerMember) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized invoice request.",
+      });
+    }
+
+    const payment = await MemberShipPaymentModel.findOne({
+      where: { id: req.params.id },
+    });
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership payment not found.",
+      });
+    }
+
+    const paymentPlain = payment.get ? payment.get({ plain: true }) : payment;
+    const viewerMemberPlain = viewerMember.get
+      ? viewerMember.get({ plain: true })
+      : viewerMember;
+
+    if (!membershipPaymentBelongsToViewer(paymentPlain, viewerMemberPlain)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to download this invoice.",
+      });
+    }
+
+    const paymentStatus = String(paymentPlain.tx_status || "").trim().toUpperCase();
+    if (!["VALID", "VALIDATED", "SUCCESS", "CASH_RECEIVED"].includes(paymentStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only successful membership payments can download invoice.",
+      });
+    }
+
+    const categoryRows = await sequelize.query(
+      `
+      SELECT cl.category_name
+      FROM member_list ml
+      LEFT JOIN category_list cl ON cl.id = ml.membership_category_id
+      WHERE ml.id = :viewer_member_id
+      LIMIT 1
+      `,
+      {
+        replacements: { viewer_member_id: viewerMemberId },
+        type: QueryTypes.SELECT,
+      }
+    ).catch(() => []);
+
+    const preparedPayment = {
+      ...paymentPlain,
+      membership_number: viewerMemberPlain.membership_number || "",
+      membership_category: categoryRows?.[0]?.category_name || "",
+    };
+
+    const invoiceFileName = `membership_invoice_${preparedPayment.id}.pdf`;
+    const membershipInvoicePath = path.join(
+      __dirname,
+      "../../public/membershippayment",
+      invoiceFileName
+    );
+    const legacyInvoicePath = path.join(
+      __dirname,
+      "../../public/invoices",
+      invoiceFileName
+    );
+
+    if (fs.existsSync(membershipInvoicePath)) {
+      return res.download(membershipInvoicePath, invoiceFileName);
+    }
+
+    if (fs.existsSync(legacyInvoicePath)) {
+      return res.download(legacyInvoicePath, invoiceFileName);
+    }
+
+    if (!fs.existsSync(membershipInvoicePath)) {
+      await generateMembershipPaymentInvoicePdf(preparedPayment, viewerMemberPlain);
+    }
+
+    return res.download(membershipInvoicePath, invoiceFileName);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Could not download membership invoice.",
     });
   }
 };

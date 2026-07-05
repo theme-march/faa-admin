@@ -77,6 +77,32 @@
         backdrop-filter: blur(4px);
     }
 
+    .invoice-settings-page .helper-box {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        margin-bottom: 14px;
+    }
+
+    .invoice-settings-page .helper-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .invoice-settings-page .helper-chip {
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: #3730a3;
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
     @media (max-width: 1199px) {
         .invoice-settings-page .quick-steps {
             grid-template-columns: 1fr;
@@ -134,6 +160,22 @@
                     <form action="/event-invoice-settings" method="post" enctype="multipart/form-data" class="event-invoice-settings-form">
                         <input type="hidden" name="id" value="<%= id %>" />
 
+                        <div class="helper-box">
+                            <div class="font-weight-semibold mb-2">Easy setup guide</div>
+                            <div class="text-muted">
+                                <b>Site URL</b> must be the public frontend URL, for example <code>https://faa-dubd.org</code>.<br>
+                                <b>QR Base URL</b> should normally be <code>https://faa-dubd.org/event/enter?id=</code>.<br>
+                                Common SMTP example: <code>mail.privateemail.com</code>, port <code>465</code>, secure <code>Yes</code>.
+                            </div>
+                            <div class="helper-actions">
+                                <button type="button" class="helper-chip js-event-site-url" data-url="https://faa-dubd.org">Use Live Frontend URL</button>
+                                <button type="button" class="helper-chip js-event-site-url" data-url="http://localhost:3001">Use Local Frontend URL</button>
+                                <button type="button" class="helper-chip js-event-qr-url" data-url="https://faa-dubd.org/event/enter?id=">Use Live QR URL</button>
+                                <button type="button" class="helper-chip js-event-qr-url" data-url="http://localhost:3001/event/enter?id=">Use Local QR URL</button>
+                                <button type="button" class="helper-chip js-event-smtp-fill" data-host="mail.privateemail.com" data-port="465" data-secure="1">Use Common SMTP</button>
+                            </div>
+                        </div>
+
                         <div class="invoice-setting-block">
                         <div class="row">
                             <div class="col-md-6">
@@ -173,19 +215,19 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>SMTP Host:</label>
-                                    <input type="text" name="smtp_host" value="<%= smtp_host %>" class="form-control" required>
+                                    <input type="text" id="event-smtp-host" name="smtp_host" value="<%= smtp_host %>" class="form-control" placeholder="mail.privateemail.com" required>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label>SMTP Port:</label>
-                                    <input type="number" name="smtp_port" value="<%= smtp_port %>" class="form-control" required>
+                                    <input type="number" id="event-smtp-port" name="smtp_port" value="<%= smtp_port %>" class="form-control" placeholder="465" required>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Secure:</label>
-                                    <select name="smtp_secure" class="form-control select-fixed-single" data-fouc>
+                                    <select id="event-smtp-secure" name="smtp_secure" class="form-control select-fixed-single" data-fouc>
                                         <% if (String(smtp_secure) === '1'){%>
                                             <option value="1" selected>Yes</option>
                                             <option value="0">No</option>
@@ -261,8 +303,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>QR Base URL:</label>
-                                    <input type="text" name="qr_base_url" value="<%= qr_base_url %>" class="form-control">
-                                    <span class="form-text text-muted">Registration ID will be added at the end automatically.</span>
+                                    <input type="text" id="event-qr-base-url" name="qr_base_url" value="<%= qr_base_url %>" class="form-control" placeholder="https://faa-dubd.org/event/enter?id=">
+                                    <span class="form-text text-muted">Use the frontend event entry URL here. Registration ID will be added automatically.</span>
                                 </div>
                             </div>
                         </div>
@@ -290,7 +332,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Site URL:</label>
-                                    <input type="text" name="site_url" value="<%= site_url %>" class="form-control">
+                                    <input type="text" id="event-site-url" name="site_url" value="<%= site_url %>" class="form-control" placeholder="https://faa-dubd.org">
+                                    <span class="form-text text-muted">Use the public frontend URL here, not the admin/CMS URL.</span>
                                 </div>
                             </div>
                         </div>
@@ -445,6 +488,45 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var siteUrlInput = document.getElementById("event-site-url");
+        var qrUrlInput = document.getElementById("event-qr-base-url");
+        var smtpHost = document.getElementById("event-smtp-host");
+        var smtpPort = document.getElementById("event-smtp-port");
+        var smtpSecure = document.getElementById("event-smtp-secure");
+
+        document.querySelectorAll(".js-event-site-url").forEach(function (button) {
+            button.addEventListener("click", function () {
+                if (siteUrlInput) {
+                    siteUrlInput.value = button.getAttribute("data-url") || "";
+                    siteUrlInput.focus();
+                }
+            });
+        });
+
+        document.querySelectorAll(".js-event-qr-url").forEach(function (button) {
+            button.addEventListener("click", function () {
+                if (qrUrlInput) {
+                    qrUrlInput.value = button.getAttribute("data-url") || "";
+                    qrUrlInput.focus();
+                }
+            });
+        });
+
+        document.querySelectorAll(".js-event-smtp-fill").forEach(function (button) {
+            button.addEventListener("click", function () {
+                if (smtpHost) smtpHost.value = button.getAttribute("data-host") || "";
+                if (smtpPort) smtpPort.value = button.getAttribute("data-port") || "";
+                if (smtpSecure) smtpSecure.value = button.getAttribute("data-secure") || "1";
+                if (window.jQuery && window.jQuery.fn.select2) {
+                    window.jQuery(smtpSecure).trigger("change");
+                }
+            });
+        });
+    });
+</script>
 
 <script>
     (function () {

@@ -73,11 +73,12 @@ function normalizeUrlBase(url, fallback) {
 }
 
 function resolveQrBaseUrl(settings) {
+  const liveFrontendQrBaseUrl = "https://faa-dubd.org/event/enter?id=";
   const legacyLiveQrBaseUrl = "https://faa-dubd.org/event/enter?id=";
   const legacyLocalFrontendQrBaseUrl = "http://localhost:3001/event/enter?id=";
   const siteBase = normalizeUrlBase(
-    settings.site_url || process.env.BACKEND_BASE_URL || process.env.SITE_URL || "",
-    "http://localhost:3000"
+    settings.site_url || process.env.FRONTEND_BASE_URL || "https://faa-dubd.org" || process.env.SITE_URL || "",
+    "https://faa-dubd.org"
   );
   const fallbackQrBaseUrl = `${siteBase}/event/enter?id=`;
   const configuredQrBaseUrl = String(settings.qr_base_url || "").trim();
@@ -87,7 +88,7 @@ function resolveQrBaseUrl(settings) {
     configuredQrBaseUrl === legacyLiveQrBaseUrl ||
     configuredQrBaseUrl === legacyLocalFrontendQrBaseUrl
   ) {
-    return fallbackQrBaseUrl;
+    return fallbackQrBaseUrl || liveFrontendQrBaseUrl;
   }
 
   return configuredQrBaseUrl;

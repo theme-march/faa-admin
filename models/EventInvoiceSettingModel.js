@@ -92,7 +92,7 @@ module.exports = sequelize => {
     qr_base_url: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      defaultValue: "http://localhost:3000/event/enter?id=",
+      defaultValue: "https://faa-dubd.org/event/enter?id=",
       field: "qr_base_url"
     },
     logo_path: {
@@ -104,7 +104,7 @@ module.exports = sequelize => {
     site_url: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      defaultValue: "http://localhost:3000",
+      defaultValue: "https://faa-dubd.org",
       field: "site_url"
     },
     created_at: {

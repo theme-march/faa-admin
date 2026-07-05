@@ -28,8 +28,22 @@ function baseUnionQuery() {
 
       UNION ALL
 
-      SELECT 'Membership Payment' AS source, msp.member_id, NULL AS student_id, msp.name, msp.organization_name, NULL AS session, NULL AS member_type, msp.phone_number, msp.email_address, msp.pay_amount, msp.created_at
-      FROM member_ship_payments msp WHERE msp.tx_status IN ('VALID', 'CASH_RECEIVED')
+      SELECT 
+        'Membership Payment' AS source,
+        msp.member_id,
+        NULL AS student_id,
+        COALESCE(ml.name, msp.name) AS name,
+        COALESCE(ml.organization_name, msp.organization_name) AS organization_name,
+        ml.session,
+        cl.category_name AS member_type,
+        COALESCE(ml.phone_number, msp.phone_number) AS phone_number,
+        COALESCE(ml.email, msp.email_address) AS email_address,
+        msp.pay_amount,
+        msp.created_at
+      FROM member_ship_payments msp
+      LEFT JOIN member_list ml ON ml.id = msp.member_id
+      LEFT JOIN category_list cl ON cl.id = ml.membership_category_id
+      WHERE msp.tx_status IN ('VALID', 'CASH_RECEIVED')
 
       UNION ALL
 

@@ -11,12 +11,84 @@
     </div>
 </div>
 
-<div class="content">
+<style>
+    .payment-setup-page .card {
+        border-radius: 14px;
+        border: 1px solid #dbe4f0;
+    }
+
+    .payment-setup-page .page-subtitle {
+        margin-top: 4px;
+        margin-bottom: 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .payment-setup-page .quick-guide {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .payment-setup-page .quick-guide-item {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: #f8fbff;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #334155;
+    }
+
+    .payment-setup-page .quick-guide-item b {
+        display: block;
+        color: #1e293b;
+        margin-bottom: 2px;
+    }
+
+    .payment-setup-page .helper-box {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        padding: 14px;
+        background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        margin-bottom: 16px;
+    }
+
+    .payment-setup-page .helper-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .payment-setup-page .helper-chip {
+        border: 1px solid #c7d2fe;
+        background: #eef2ff;
+        color: #3730a3;
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    @media (max-width: 1199px) {
+        .payment-setup-page .quick-guide {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="content payment-setup-page">
     <div class="row">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header header-elements-inline">
-                    <h5 class="card-title">Payment Setup</h5>
+                    <div>
+                        <h5 class="card-title mb-0">Payment Setup</h5>
+                        <p class="page-subtitle">Set frontend redirect URL, SSL gateway mode, and cash/SSL availability from one clear screen.</p>
+                    </div>
                 </div>
 
                 <% if (messages.error) { %>
@@ -34,6 +106,34 @@
                 <div class="card-body">
                     <form action="/payment-settings" method="post" name="form1">
                         <input type="hidden" name="id" value="<%= id %>" />
+
+                        <div class="quick-guide">
+                            <div class="quick-guide-item">
+                                <b>Step 1: System Status</b>
+                                Keep Active to allow payment processing on the public website.
+                            </div>
+                            <div class="quick-guide-item">
+                                <b>Step 2: Site URL</b>
+                                Use your frontend website URL here, not the admin/CMS URL.
+                            </div>
+                            <div class="quick-guide-item">
+                                <b>Step 3: Gateway Mode</b>
+                                Use Sandbox for testing and Live for production SSLCommerz.
+                            </div>
+                        </div>
+
+                        <div class="helper-box">
+                            <div class="font-weight-semibold mb-2">Admin tip</div>
+                            <div class="text-muted">
+                                Live public website: <code>https://faa-dubd.org</code><br>
+                                Admin/CMS website: <code>https://cms.faa-dubd.org</code><br>
+                                Put only the <b>public frontend URL</b> into the <b>Site URL</b> field.
+                            </div>
+                            <div class="helper-actions">
+                                <button type="button" class="helper-chip js-fill-site-url" data-url="https://faa-dubd.org">Use Live Frontend URL</button>
+                                <button type="button" class="helper-chip js-fill-site-url" data-url="http://localhost:3001">Use Local Frontend URL</button>
+                            </div>
+                        </div>
 
                         <div class="row">
                             <div class="col-md-4">
@@ -111,8 +211,8 @@
 
                         <div class="form-group">
                             <label>Site URL</label>
-                            <input type="text" name="site_url" value="<%= site_url %>" class="form-control" placeholder="http://localhost:3001" required>
-                            <span class="form-text text-muted">Payment success, fail and cancel pages will redirect to this frontend/base URL.</span>
+                            <input type="text" id="payment-site-url" name="site_url" value="<%= site_url %>" class="form-control" placeholder="https://faa-dubd.org" required>
+                            <span class="form-text text-muted">This must be the frontend/public website URL. Payment success, fail and cancel pages redirect here.</span>
                         </div>
 
                         <div class="form-group">
@@ -139,3 +239,17 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var siteUrlInput = document.getElementById("payment-site-url");
+        document.querySelectorAll(".js-fill-site-url").forEach(function (button) {
+            button.addEventListener("click", function () {
+                if (siteUrlInput) {
+                    siteUrlInput.value = button.getAttribute("data-url") || "";
+                    siteUrlInput.focus();
+                }
+            });
+        });
+    });
+</script>

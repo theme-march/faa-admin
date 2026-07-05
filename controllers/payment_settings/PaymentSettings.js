@@ -1,4 +1,12 @@
-﻿const { PaymentSettingModel } = require("../../models");
+const { PaymentSettingModel } = require("../../models");
+
+const LIVE_FRONTEND_URL = "https://faa-dubd.org";
+const LEGACY_LOCAL_SITE_URLS = new Set([
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://localhost:3000",
+  "https://localhost:3001",
+]);
 
 const DEFAULT_SETTINGS = {
   store_id: "",
@@ -7,15 +15,29 @@ const DEFAULT_SETTINGS = {
   ssl_enabled: 1,
   cash_enabled: 0,
   cash_payment_notice: "",
-  site_url: "",
+  site_url: LIVE_FRONTEND_URL,
   status: 0,
 };
+
+function normalizeFrontendSiteUrl(value) {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return LIVE_FRONTEND_URL;
+
+  const normalized = rawValue.replace(/\/+$/, "");
+  if (LEGACY_LOCAL_SITE_URLS.has(normalized)) {
+    return LIVE_FRONTEND_URL;
+  }
+
+  return normalized;
+}
 
 async function getOrCreateSettings() {
   let settings = await PaymentSettingModel.findOne({ order: [["id", "ASC"]] });
 
   if (!settings) {
     settings = await PaymentSettingModel.create(DEFAULT_SETTINGS);
+  } else if (!settings.site_url || LEGACY_LOCAL_SITE_URLS.has(String(settings.site_url).trim())) {
+    await settings.update({ site_url: LIVE_FRONTEND_URL });
   }
 
   return settings;
@@ -29,7 +51,7 @@ function buildPaymentConfig(settings) {
     ssl_enabled: String(settings?.ssl_enabled ?? "1") === "1",
     cash_enabled: String(settings?.cash_enabled ?? "0") === "1",
     cash_payment_notice: String(settings?.cash_payment_notice || "").trim(),
-    site_url: String(settings?.site_url || "").trim(),
+    site_url: normalizeFrontendSiteUrl(settings?.site_url),
     status: String(settings?.status) === "1",
   };
 
@@ -42,7 +64,10 @@ function buildPaymentConfig(settings) {
 
   return {
     ...config,
-    is_configured: config.status && (config.cash_enabled || config.ssl_enabled) && missingFields.length === 0,
+    is_configured:
+      config.status &&
+      (config.cash_enabled || config.ssl_enabled) &&
+      missingFields.length === 0,
     missing_fields: missingFields,
   };
 }
@@ -92,7 +117,7 @@ exports.edit_from = async (req, res, next) => {
       ssl_enabled: settings.ssl_enabled,
       cash_enabled: settings.cash_enabled,
       cash_payment_notice: settings.cash_payment_notice,
-      site_url: settings.site_url,
+      site_url: normalizeFrontendSiteUrl(settings.site_url),
       status: settings.status,
     });
   } catch (err) {
@@ -113,7 +138,7 @@ exports.edit = async (req, res, next) => {
         ssl_enabled: req.body.ssl_enabled,
         cash_enabled: req.body.cash_enabled,
         cash_payment_notice: req.body.cash_payment_notice,
-        site_url: req.body.site_url,
+        site_url: normalizeFrontendSiteUrl(req.body.site_url),
         status: req.body.status,
       },
       { where: { id: settings.id } }

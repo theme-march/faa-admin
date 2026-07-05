@@ -8,6 +8,7 @@ const moment = require("moment");
 const multer = require("multer");
 const path = require("path");
 const sharp = require("sharp");
+const { sendMembershipPaymentInvoice } = require("../../services/membershipInvoiceMailer");
 
 function normalizeText(value = "") {
   return String(value || "").trim().toLowerCase();
@@ -212,9 +213,9 @@ exports.data_list = async (req, res, next) => {
   }
 
   if (transactionStatus === "pay") {
-    query_str = query_str + " AND ml.is_pay = 1 ";
+    query_str = query_str + " AND COALESCE(msp_summary.has_success_payment, ml.is_pay, 0) = 1 ";
   } else if (transactionStatus === "not_pay") {
-    query_str = query_str + " AND ml.is_pay = 0 ";
+    query_str = query_str + " AND COALESCE(msp_summary.has_success_payment, ml.is_pay, 0) = 0 ";
   } else if (transactionStatus === "cash_pending") {
     query_str = query_str + " AND COALESCE(mcp.pending_cash_requests, 0) > 0 ";
   }
@@ -223,10 +224,21 @@ exports.data_list = async (req, res, next) => {
     `SELECT 
       ml.*,
       c.category_name,
+      COALESCE(msp_summary.has_success_payment, ml.is_pay, 0) AS is_pay,
+      COALESCE(msp_summary.latest_paid_amount, ml.amount) AS effective_paid_amount,
       COALESCE(mcp.pending_cash_requests, 0) AS pending_cash_requests,
       mcp.pending_cash_amount
     FROM member_list ml
     INNER JOIN category_list c ON ml.membership_category_id = c.id
+    LEFT JOIN (
+      SELECT 
+        msp.member_id,
+        1 AS has_success_payment,
+        SUBSTRING_INDEX(GROUP_CONCAT(msp.pay_amount ORDER BY msp.id DESC), ',', 1) AS latest_paid_amount
+      FROM member_ship_payments msp
+      WHERE msp.tx_status IN ('VALID', 'CASH_RECEIVED')
+      GROUP BY msp.member_id
+    ) msp_summary ON msp_summary.member_id = ml.id
     LEFT JOIN (
       SELECT 
         msp.member_id,
@@ -246,6 +258,14 @@ exports.data_list = async (req, res, next) => {
     `SELECT COUNT(*) AS num_of_row
       FROM member_list ml
       INNER JOIN category_list c ON ml.membership_category_id = c.id
+      LEFT JOIN (
+        SELECT
+          msp.member_id,
+          1 AS has_success_payment
+        FROM member_ship_payments msp
+        WHERE msp.tx_status IN ('VALID', 'CASH_RECEIVED')
+        GROUP BY msp.member_id
+      ) msp_summary ON msp_summary.member_id = ml.id
       LEFT JOIN (
         SELECT
           msp.member_id,
@@ -1195,12 +1215,17 @@ exports.mark_cash_received = async (req, res, next) => {
     await MemberModel.update(
       {
         is_pay: 1,
+        admin_approval: 1,
         amount: pendingPayment[0].pay_amount,
         approved_at: new Date(),
         updated_at: new Date(),
       },
       { where: { id: req.body.member_id } }
     );
+
+    sendMembershipPaymentInvoice(pendingPayment[0].id).catch((emailError) => {
+      console.log("Membership invoice email send failed:", emailError.message);
+    });
 
     return res.status(200).json({
       success: true,

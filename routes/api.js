@@ -129,6 +129,9 @@ router.get("/v1/user_details/:user_id", requireMemberAuth, function (req, res, n
 router.get("/v1/event-registration-invoice/:id", requireMemberAuth, function (req, res, next) {
   member.downloadEventRegistrationInvoice(req, res, next);
 });
+router.get("/v1/membership-payment-invoice/:id", requireMemberAuth, function (req, res, next) {
+  member.downloadMembershipPaymentInvoice(req, res, next);
+});
 router.post("/v1/member_approved", function (req, res, next) {
   member.SaveMemberApproved(req, res, next);
 });
