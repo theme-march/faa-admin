@@ -295,8 +295,9 @@ exports.data_list = async (req, res, next) => {
       (Number(e.pending_cash_requests || 0) > 0 ? "<a data-member-id='" + e.id + "' href='javascript:void(0);' id='mark_cash_received' class='dropdown-item'><i class='icon-cash3'></i> Mark Cash Received</a>" : "") +
       "<a data-member-id='" + e.id + "' href='javascript:void(0);' id='mark_paid' class='dropdown-item'><i class='icon-checkmark4'></i> Mark as Paid</a>" +
       "<a data-member-id='" + e.id + "' href='javascript:void(0);' id='mark_not_paid' class='dropdown-item'><i class='icon-cross2'></i> Mark as Not Paid</a>" +
-      "<a href='/member/" + e.id + "/card-qr' class='dropdown-item'><i class='icon-qrcode'></i> Download Card QR</a>" +
-      "<form action='/member/" + e.id + "/card-qr/reissue' method='post' onsubmit=\"return confirm('Reissue QR? The old printed QR will stop working.');\"><button type='submit' class='dropdown-item'><i class='icon-loop3'></i> Reissue Card QR</button></form>" +
+      "<a href='/member/" + e.id + "/card-qr' class='dropdown-item'><i class='icon-qrcode'></i> Download Current Card QR</a>" +
+      "<a href='/member/" + e.id + "/card-qr/history' class='dropdown-item'><i class='icon-history'></i> Card QR History & Recovery</a>" +
+      "<form action='/member/" + e.id + "/card-qr/replacement/prepare' method='post' onsubmit=\"return confirm('Prepare a replacement QR? The current physical-card QR will remain active until the replacement is activated.');\"><button type='submit' class='dropdown-item'><i class='icon-plus-circle2'></i> Prepare Replacement QR</button></form>" +
       "</div>" +
       "</div>" +
       "</div>";

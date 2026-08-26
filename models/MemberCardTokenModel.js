@@ -8,6 +8,7 @@ module.exports = (sequelize) => sequelize.define("MemberCardTokenModel", {
   is_active: { type: DataTypes.INTEGER(1), allowNull: false, defaultValue: 1 },
   issued_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
   revoked_at: { type: DataTypes.DATE, allowNull: true },
+  revoked_reason: { type: DataTypes.STRING(100), allowNull: true },
   last_scanned_at: { type: DataTypes.DATE, allowNull: true },
   created_by: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
 }, {

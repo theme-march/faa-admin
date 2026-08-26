@@ -309,6 +309,12 @@ router.post('/staff/checkin/:id/reverse', requireStaff, EventStaff.reverseChecki
 router.get('/member/verify/:token', MemberCard.verify);
 router.post('/staff/member-card/checkin', requireStaff, MemberCard.checkin);
 router.get('/member/:id/card-qr', requireAdmin, MemberCard.downloadQr);
+router.get('/member/:id/card-qr/history', requireAdmin, MemberCard.qrHistory);
+router.get('/member/:id/card-qr/:tokenId/download', requireAdmin, MemberCard.downloadTokenQr);
+router.post('/member/:id/card-qr/replacement/prepare', requireAdmin, MemberCard.prepareReplacement);
+router.post('/member/:id/card-qr/replacement/:tokenId/activate', requireAdmin, MemberCard.activateReplacement);
+router.post('/member/:id/card-qr/replacement/:tokenId/cancel', requireAdmin, MemberCard.cancelReplacement);
+router.post('/member/:id/card-qr/:tokenId/restore', requireAdmin, MemberCard.restorePreviousQr);
 router.post('/member/:id/card-qr/reissue', requireAdmin, MemberCard.reissueQr);
 router.post('/member-card-qr/generate-all', requireAdmin, MemberCard.generateAll);
 
@@ -1156,4 +1162,3 @@ module.exports = router;
 router.post('/member/mark_cash_received', Member.mark_cash_received);
 router.post('/member/mark_paid', Member.mark_paid);
 router.post('/member/mark_not_paid', Member.mark_not_paid);
-

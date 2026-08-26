@@ -1,8 +1,19 @@
 const QRCode = require("qrcode");
 const { QueryTypes } = require("sequelize");
 const { sequelize, MemberModel, MemberCardTokenModel, EventStaffAssignmentModel } = require("../models");
-const { ensureActiveTokensForMembers, findActiveToken, getMemberQrBaseUrl, getOrCreateActiveMemberToken, reissueMemberToken } = require("../services/memberCardQr");
+const {
+  ensureActiveTokensForMembers,
+  findActiveToken,
+  getMemberQrBaseUrl,
+  getOrCreateActiveMemberToken,
+  prepareReplacementToken,
+  activateReplacementToken,
+  cancelReplacementToken,
+  restorePreviousToken,
+  reissueMemberToken,
+} = require("../services/memberCardQr");
 const { performEventCheckin } = require("../services/eventCheckin");
+const { registrationBelongsToMember } = require("../services/memberIdentity");
 
 function adminId(req) { return Number(req.session?.user?.id || 0) || null; }
 
@@ -23,9 +34,121 @@ exports.reissueQr = async (req, res) => {
     req.flash("error", "Member not found.");
     return res.redirect("/members");
   }
-  await reissueMemberToken(member.id, adminId(req));
-  req.flash("success", `A new card QR was issued for ${member.membership_number}. The old QR is now invalid.`);
-  return res.redirect("/members");
+  const confirmation = String(req.body.confirmation || "").trim();
+  if (!member.membership_number || confirmation !== String(member.membership_number).trim()) {
+    req.flash("error", "Immediate replacement cancelled. Enter the exact membership number to confirm a lost/stolen card replacement.");
+    return res.redirect(`/member/${member.id}/card-qr/history`);
+  }
+  try {
+    await reissueMemberToken(member.id, adminId(req));
+    req.flash("success", `A new QR was issued for ${member.membership_number}. Every previous physical-card QR is now invalid.`);
+  } catch (error) {
+    req.flash("error", error.message);
+  }
+  return res.redirect(`/member/${member.id}/card-qr/history`);
+};
+
+exports.qrHistory = async (req, res, next) => {
+  try {
+    const member = await MemberModel.findByPk(req.params.id, {
+      attributes: ["id", "name", "membership_number", "member_image"],
+      raw: true,
+    });
+    if (!member) {
+      req.flash("error", "Member not found.");
+      return res.redirect("/members");
+    }
+
+    const tokens = await MemberCardTokenModel.findAll({
+      where: { member_id: member.id },
+      order: [["id", "DESC"]],
+      raw: true,
+    });
+    const audits = await sequelize.query(`
+      SELECT a.*, au.name AS actor_name
+      FROM member_card_token_audits a
+      LEFT JOIN admin_user au ON au.id = a.actor_id
+      WHERE a.member_id = :memberId
+      ORDER BY a.created_at DESC, a.id DESC
+      LIMIT 100
+    `, { replacements: { memberId: member.id }, type: QueryTypes.SELECT });
+
+    return res.render("member_card/history", { member, tokens, audits });
+  } catch (error) { return next(error); }
+};
+
+exports.prepareReplacement = async (req, res) => {
+  const member = await MemberModel.findByPk(req.params.id);
+  if (!member) {
+    req.flash("error", "Member not found.");
+    return res.redirect("/members");
+  }
+  try {
+    const result = await prepareReplacementToken(member.id, adminId(req));
+    req.flash(
+      result.created ? "success" : "error",
+      result.created
+        ? `Replacement QR prepared for ${member.membership_number}. The current physical-card QR is still active.`
+        : "A pending replacement already exists. Activate or cancel it from QR History."
+    );
+  } catch (error) { req.flash("error", error.message); }
+  return res.redirect(`/member/${member.id}/card-qr/history`);
+};
+
+exports.activateReplacement = async (req, res) => {
+  try {
+    await activateReplacementToken(Number(req.params.id), Number(req.params.tokenId), adminId(req));
+    req.flash("success", "Replacement QR activated. The previous physical-card QR is now invalid.");
+  } catch (error) { req.flash("error", error.message); }
+  return res.redirect(`/member/${req.params.id}/card-qr/history`);
+};
+
+exports.cancelReplacement = async (req, res) => {
+  try {
+    await cancelReplacementToken(Number(req.params.id), Number(req.params.tokenId), adminId(req));
+    req.flash("success", "Pending replacement cancelled. The current physical-card QR remains active.");
+  } catch (error) { req.flash("error", error.message); }
+  return res.redirect(`/member/${req.params.id}/card-qr/history`);
+};
+
+exports.restorePreviousQr = async (req, res) => {
+  const member = await MemberModel.findByPk(req.params.id);
+  if (!member) {
+    req.flash("error", "Member not found.");
+    return res.redirect("/members");
+  }
+  const confirmation = String(req.body.confirmation || "").trim();
+  if (!member.membership_number || confirmation !== String(member.membership_number).trim()) {
+    req.flash("error", "Restore cancelled. Enter the exact membership number to confirm.");
+    return res.redirect(`/member/${member.id}/card-qr/history`);
+  }
+  try {
+    await restorePreviousToken(member.id, Number(req.params.tokenId), adminId(req));
+    req.flash("success", "Previous physical-card QR restored. The newer QR is now invalid.");
+  } catch (error) { req.flash("error", error.message); }
+  return res.redirect(`/member/${member.id}/card-qr/history`);
+};
+
+exports.downloadTokenQr = async (req, res) => {
+  try {
+    const member = await MemberModel.findByPk(req.params.id);
+    const token = await MemberCardTokenModel.findOne({
+      where: { id: req.params.tokenId, member_id: req.params.id },
+    });
+    if (!member || !token) return res.status(404).send("Member QR token not found.");
+    const isPending = Number(token.is_active) === 0 && !token.revoked_at;
+    if (Number(token.is_active) !== 1 && !isPending) {
+      return res.status(409).send("Revoked or cancelled QR files cannot be downloaded.");
+    }
+    const url = `${getMemberQrBaseUrl(req)}${token.token_value}`;
+    const png = await QRCode.toBuffer(url, { type: "png", width: 1000, margin: 4, errorCorrectionLevel: "H" });
+    const state = isPending ? "PENDING_REPLACEMENT" : "ACTIVE";
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="FAA_${member.membership_number || member.id}_${state}_QR.png"`);
+    return res.send(png);
+  } catch (error) {
+    return res.status(500).send("Unable to download this QR file.");
+  }
 };
 
 exports.generateAll = async (req, res) => {
@@ -104,28 +227,43 @@ exports.verify = async (req, res, next) => {
 };
 
 exports.checkin = async (req, res) => {
-  const token = await findActiveToken(req.body.token);
-  if (!token) return res.status(404).json({ success: false, message: "Invalid or revoked member card QR." });
-  const registrationRows = await sequelize.query(`
-    SELECT id FROM event_register
-    WHERE id = :registrationId
-      AND (CAST(member_id AS CHAR) = CAST(:memberId AS CHAR)
-           OR CAST(member_id AS CHAR) = (SELECT membership_number FROM member_list WHERE id = :memberId LIMIT 1)
-           OR (COALESCE((SELECT email FROM member_list WHERE id = :memberId LIMIT 1), '') <> ''
-               AND LOWER(COALESCE(email_address, '')) = LOWER((SELECT email FROM member_list WHERE id = :memberId LIMIT 1)))
-           OR (COALESCE((SELECT phone_number FROM member_list WHERE id = :memberId LIMIT 1), '') <> ''
-               AND REPLACE(COALESCE(phone_number, ''), ' ', '') = REPLACE((SELECT phone_number FROM member_list WHERE id = :memberId LIMIT 1), ' ', '')))
-    LIMIT 1
-  `, {
-    replacements: { registrationId: req.body.registration_id, memberId: token.member_id },
-    type: QueryTypes.SELECT,
-  });
-  if (!registrationRows[0]) return res.status(403).json({ success: false, message: "This registration does not belong to the scanned member." });
-  const result = await performEventCheckin({
-    registrationId: registrationRows[0].id,
-    qrType: "MEMBER_CARD_QR",
-    req,
-    requireAuthenticatedStaff: true,
-  });
-  return res.status(result.status || 200).json(result);
+  try {
+    const token = await findActiveToken(req.body.token);
+    if (!token) return res.status(404).json({ success: false, message: "Invalid or revoked member card QR." });
+
+    const [member, registrationRows] = await Promise.all([
+      MemberModel.findByPk(token.member_id, {
+        attributes: ["id", "membership_number", "email", "phone_number"],
+        raw: true,
+      }),
+      sequelize.query(`
+        SELECT id, member_id, email_address, phone_number
+        FROM event_register
+        WHERE id = :registrationId
+        LIMIT 1
+      `, {
+        replacements: { registrationId: req.body.registration_id },
+        type: QueryTypes.SELECT,
+      }),
+    ]);
+
+    const registration = registrationRows[0];
+    if (!registrationBelongsToMember(registration, member)) {
+      return res.status(403).json({ success: false, message: "This registration does not belong to the scanned member." });
+    }
+
+    const result = await performEventCheckin({
+      registrationId: registration.id,
+      qrType: "MEMBER_CARD_QR",
+      req,
+      requireAuthenticatedStaff: true,
+    });
+    return res.status(result.status || 200).json(result);
+  } catch (error) {
+    console.error("Member card check-in error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to confirm event entry right now. Please try again.",
+    });
+  }
 };

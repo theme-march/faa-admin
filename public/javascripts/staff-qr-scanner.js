@@ -11,7 +11,34 @@
   var statusBox = document.getElementById('qr-scanner-status');
   var statusText = document.getElementById('qr-scanner-status-text');
 
-  if (!modal || !reader || typeof window.Html5Qrcode === 'undefined') return;
+  if (!modal || !reader) return;
+
+  var libraryPromise = null;
+
+  function loadScannerScript(src) {
+    return new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = function () {
+        if (typeof window.Html5Qrcode !== 'undefined') resolve();
+        else reject(new Error('QR scanner library did not initialize.'));
+      };
+      script.onerror = function () { reject(new Error('Unable to load ' + src)); };
+      document.head.appendChild(script);
+    });
+  }
+
+  function ensureScannerLibrary() {
+    if (typeof window.Html5Qrcode !== 'undefined') return Promise.resolve();
+    if (!libraryPromise) {
+      libraryPromise = loadScannerScript('/javascripts/html5-qrcode.min.js?v=2.3.8')
+        .catch(function () {
+          return loadScannerScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
+        });
+    }
+    return libraryPromise;
+  }
 
   var scanner = null;
   var cameras = [];
@@ -171,7 +198,13 @@
     modal.hidden = false;
     document.body.classList.add('scanner-open');
     window.requestAnimationFrame(function () { modal.classList.add('visible'); });
-    await startCamera();
+    setStatus('Loading QR scanner…', 'loading');
+    try {
+      await ensureScannerLibrary();
+      if (scannerWanted) await startCamera();
+    } catch (error) {
+      setStatus('QR scanner could not load. Check the connection and refresh this page.', 'error');
+    }
   }
 
   async function closeScanner() {
