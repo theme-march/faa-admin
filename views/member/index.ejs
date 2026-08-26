@@ -29,9 +29,13 @@
                     Add Member
                 </button>
 
+                <form action="/member-card-qr/generate-all" method="post" class="member-toolbar-form" onsubmit="return confirm('Generate permanent QR tokens for all approved active members? Existing QR tokens will stay unchanged.');">
+                    <button type="submit" class="btn btn-outline-primary">Generate All Member QR Tokens</button>
+                </form>
+
                 <form action="/members/excel_report" method="post" name="form1" class="member-toolbar-form">
                     <button id="export_user" onclick="location.href='#'" type="submit" class="btn btn-primary">
-                        Export User
+                        Export Users + QR
                     </button>
                 </form>
 
@@ -436,8 +440,6 @@
 
     });
 </script>
-
-
 
 
 

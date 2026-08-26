@@ -1,5 +1,7 @@
 const { sequelize } = require("../models");
 const { QueryTypes } = require('sequelize');
+const { EventStaffAssignmentModel } = require('../models');
+const { performEventCheckin } = require('../services/eventCheckin');
 
 exports.participantDetails = async (req, res, next) => {
   const id = req.query.id;
@@ -55,13 +57,28 @@ exports.participantDetails = async (req, res, next) => {
     let requiresPasscode = false;
 
     const savedPasscode = String(participant.entry_passcode || "").trim();
-    if (savedPasscode && savedPasscode !== enteredPasscode) {
+    const staffSession = req.session?.eventStaff || null;
+    const adminSession = req.session?.user || null;
+    let staffAssigned = true;
+    if (staffSession?.id) {
+      staffAssigned = Boolean(await EventStaffAssignmentModel.findOne({
+        where: { staff_id: staffSession.id, event_id: participant.event_id },
+      }));
+    }
+
+    if (!staffSession && !adminSession && savedPasscode && savedPasscode !== enteredPasscode) {
       requiresPasscode = true;
       message = "Enter your Event Entry Password to access this page.";
     } else if (participant.is_pay === 1) {
       if (!participant.enter_date_time) {
-        message = 'You have paid for this event. Click the button to enter.';
-        showEnterButton = true;
+        if (staffSession && !staffAssigned) {
+          message = 'This event is not assigned to your staff account.';
+        } else {
+          message = staffSession || adminSession
+            ? 'Registration and payment verified. Confirm event entry.'
+            : 'You have paid for this event. Click the button to enter.';
+          showEnterButton = true;
+        }
       } else {
         message = 'You have already entered this event.';
       }
@@ -78,6 +95,7 @@ exports.participantDetails = async (req, res, next) => {
       showResetButton,
       requiresPasscode,
       enteredPasscode,
+      staffSession,
     });
   } catch (error) {
     next(error);
@@ -102,7 +120,8 @@ exports.updateEnterDateTime = async (req, res, next) => {
     }
 
     const savedPasscode = String(participant.entry_passcode || "").trim();
-    if (savedPasscode && savedPasscode !== passcode) {
+    const isAuthenticatedOperator = Boolean(req.session?.eventStaff?.id || req.session?.user?.id);
+    if (!isAuthenticatedOperator && savedPasscode && savedPasscode !== passcode) {
       return res.json({ success: false, message: 'Invalid Event Entry Password.' });
     }
 
@@ -110,21 +129,13 @@ exports.updateEnterDateTime = async (req, res, next) => {
       return res.json({ success: false, message: 'Payment is pending for this registration.' });
     }
 
-    const [result] = await sequelize.query(
-      `UPDATE event_register 
-       SET enter_date_time = NOW() 
-       WHERE id = :id`,
-      {
-        replacements: { id },
-        type: QueryTypes.UPDATE,
-      }
-    );
-
-    if (result === 0) {
-      return res.json({ success: false, message: 'Failed to update entry. Participant not found.' });
-    }
-
-    res.json({ success: true, message: 'Successfully entered the event.' });
+    const result = await performEventCheckin({
+      registrationId: id,
+      qrType: "EVENT_QR",
+      req,
+      requireAuthenticatedStaff: isAuthenticatedOperator,
+    });
+    return res.status(result.status || 200).json(result);
   } catch (error) {
     console.log(error)
     res.json({ success: false, message: 'Failed to enter the event.' });

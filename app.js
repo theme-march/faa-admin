@@ -95,6 +95,8 @@ app.use(flash());
 
 // Serve TinyMCE from node_modules
 app.use('/tinymce', express.static(path.join(__dirname, 'node_modules', 'tinymce')));
+// Serve the browser QR scanner bundle locally so event entry does not depend on a CDN.
+app.use('/vendor/html5-qrcode', express.static(path.join(__dirname, 'node_modules', 'html5-qrcode')));
 
 app.use('/', indexRouter);
 app.use('/api', apiRouter);

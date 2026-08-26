@@ -386,9 +386,19 @@ exports.downloadInvoice = async (req, res) => {
 
 exports.resetEntry = async (req, res) => {
   try {
-    await sequelize.query(`UPDATE event_register SET enter_date_time = NULL WHERE id = :id`, {
-      replacements: { id: req.params.id },
-      type: QueryTypes.UPDATE
+    await sequelize.transaction(async (transaction) => {
+      await sequelize.query(`UPDATE event_register SET enter_date_time = NULL WHERE id = :id`, {
+        replacements: { id: req.params.id }, type: QueryTypes.UPDATE, transaction
+      });
+      await sequelize.query(`
+        UPDATE event_checkins
+        SET status = 'reversed', reversed_by = :adminId, reversed_at = NOW(),
+            reverse_reason = 'Reset from event registration admin'
+        WHERE registration_id = :id AND status = 'active'
+      `, {
+        replacements: { id: req.params.id, adminId: req.session?.user?.id || null },
+        type: QueryTypes.UPDATE, transaction
+      });
     });
     req.flash("success", "Event entry reset successfully.");
     return res.redirect("/event-registration");
@@ -514,4 +524,3 @@ exports.bulkDelete = async (req, res) => {
     return res.redirect("/event-registration");
   }
 };
-

@@ -8,7 +8,10 @@ const moment = require("moment");
 const multer = require("multer");
 const path = require("path");
 const sharp = require("sharp");
+const { ZipArchive } = require("archiver");
+const QRCode = require("qrcode");
 const { sendMembershipPaymentInvoice } = require("../../services/membershipInvoiceMailer");
+const { ensureActiveTokensForMembers, getMemberQrBaseUrl } = require("../../services/memberCardQr");
 
 function normalizeText(value = "") {
   return String(value || "").trim().toLowerCase();
@@ -292,6 +295,8 @@ exports.data_list = async (req, res, next) => {
       (Number(e.pending_cash_requests || 0) > 0 ? "<a data-member-id='" + e.id + "' href='javascript:void(0);' id='mark_cash_received' class='dropdown-item'><i class='icon-cash3'></i> Mark Cash Received</a>" : "") +
       "<a data-member-id='" + e.id + "' href='javascript:void(0);' id='mark_paid' class='dropdown-item'><i class='icon-checkmark4'></i> Mark as Paid</a>" +
       "<a data-member-id='" + e.id + "' href='javascript:void(0);' id='mark_not_paid' class='dropdown-item'><i class='icon-cross2'></i> Mark as Not Paid</a>" +
+      "<a href='/member/" + e.id + "/card-qr' class='dropdown-item'><i class='icon-qrcode'></i> Download Card QR</a>" +
+      "<form action='/member/" + e.id + "/card-qr/reissue' method='post' onsubmit=\"return confirm('Reissue QR? The old printed QR will stop working.');\"><button type='submit' class='dropdown-item'><i class='icon-loop3'></i> Reissue Card QR</button></form>" +
       "</div>" +
       "</div>" +
       "</div>";
@@ -936,13 +941,10 @@ exports.not_approve = async (req, res, next) => {
 
 exports.excel_report = [
   async (req, res, next) => {
-    let file_name = "";
     const errors = validationResult(req);
-    let validation = true;
     let validation_message = "";
 
     if (errors.errors.length !== 0) {
-      validation = false;
       errors.errors.forEach((err) => {
         validation_message += err.msg + "<br />";
       });
@@ -951,13 +953,13 @@ exports.excel_report = [
     }
 
     try {
-      file_name = "Excel_Member";
-      const list = await sequelize.query(`SELECT * FROM member_list;`, {
+      const list = await sequelize.query(`SELECT * FROM member_list ORDER BY id ASC;`, {
         type: QueryTypes.SELECT,
+        logging: false,
       });
 
-      let workbook = new excel.Workbook();
-      let worksheet = workbook.addWorksheet("Members");
+      const workbook = new excel.Workbook();
+      const worksheet = workbook.addWorksheet("Members");
 
       worksheet.columns = [
         { header: "Membership Number", key: "membership_number", width: 20 },
@@ -975,6 +977,8 @@ exports.excel_report = [
           key: "membership_category_id",
           width: 20,
         },
+        { header: "QR URL", key: "qr_url", width: 65 },
+        { header: "QR File", key: "qr_file", width: 45 },
       ];
 
       const sanitize = (value) => {
@@ -986,7 +990,49 @@ exports.excel_report = [
           .replace(/\n/g, " "); // Replace newlines with space
       };
 
-      list.forEach((member) => {
+      const safeFilePart = (value, fallback = "member") => {
+        const cleaned = String(value || "")
+          .normalize("NFKD")
+          .replace(/[^a-zA-Z0-9_-]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 80);
+        return cleaned || fallback;
+      };
+
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="FAA_All_Members_With_QR_${moment().format("YYYY-MM-DD")}.zip"`
+      );
+
+      const archive = new ZipArchive({ zlib: { level: 9 } });
+      archive.on("warning", (error) => console.warn("Member QR ZIP warning:", error.message));
+      archive.on("error", (error) => {
+        console.error("Member QR ZIP error:", error);
+        if (!res.destroyed) res.destroy(error);
+      });
+      archive.pipe(res);
+
+      const qrBaseUrl = getMemberQrBaseUrl(req);
+      const createdBy = Number(req.session?.user?.id || 0) || null;
+      const tokenMap = await ensureActiveTokensForMembers(list.map((member) => member.id), createdBy);
+
+      for (const member of list) {
+        const token = tokenMap.get(String(member.id));
+        if (!token) throw new Error(`Unable to prepare QR token for member ${member.id}.`);
+        const qrUrl = `${qrBaseUrl}${token.token_value}`;
+        const membershipPart = safeFilePart(member.membership_number, `member_${member.id}`);
+        const namePart = safeFilePart(member.name, "member");
+        const qrFileName = `${membershipPart}_${namePart}_${member.id}.png`;
+        const qrBuffer = await QRCode.toBuffer(qrUrl, {
+          type: "png",
+          width: 400,
+          margin: 4,
+          errorCorrectionLevel: "H",
+        });
+
+        archive.append(qrBuffer, { name: `qr-codes/${qrFileName}` });
+
         const json_obj = {
           membership_number: sanitize(member.membership_number),
           name: sanitize(member.name),
@@ -999,27 +1045,28 @@ exports.excel_report = [
           organization_name: sanitize(member.organization_name),
           designation_name: sanitize(member.designation_name),
           membership_category_id: sanitize(member.membership_category_id),
+          qr_url: qrUrl,
+          qr_file: `qr-codes/${qrFileName}`,
         };
 
         worksheet.addRow(json_obj);
-      });
+      }
 
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-      res.setHeader(
-        "Content-Disposition",
-        "attachment; filename=" + file_name + ".xlsx"
-      );
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.autoFilter = { from: "A1", to: "M1" };
+      const excelBuffer = await workbook.xlsx.writeBuffer();
+      archive.append(Buffer.from(excelBuffer), { name: "members.xlsx" });
 
-      return workbook.xlsx.write(res).then(() => {
-        res.status(200).end();
-      });
+      await archive.finalize();
+      return undefined;
     } catch (err) {
-      console.error("Excel Export Error:", err);
-      req.flash("error", "Excel export failed!");
-      return res.redirect("/member");
+      console.error("Member QR ZIP Export Error:", err);
+      if (res.headersSent) {
+        if (!res.destroyed) res.destroy(err);
+        return undefined;
+      }
+      req.flash("error", "Member and QR export failed!");
+      return res.redirect("/members");
     }
   },
 ];

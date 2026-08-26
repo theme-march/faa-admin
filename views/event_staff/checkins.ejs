@@ -1,0 +1,6 @@
+<div class="page-header page-header-light"><div class="breadcrumb-line breadcrumb-line-light"><div class="breadcrumb"><a href="/event-staff" class="breadcrumb-item">Event Staff</a><span class="breadcrumb-item active">Check-in History</span></div></div></div>
+<div class="content"><div class="card"><div class="card-header"><h5 class="card-title">Event Check-in History</h5></div><div class="card-body"><div class="table-responsive">
+  <table class="table table-bordered table-striped datatable-basic"><thead><tr><th>Member</th><th>Membership No.</th><th>Event</th><th>Time</th><th>Checked in by</th><th>Method</th><th>Status</th></tr></thead><tbody>
+    <% (checkins || []).forEach(function(item){ %><tr><td><%= item.full_name || '-' %></td><td><%= item.membership_number || item.member_id || '-' %></td><td><%= item.event_title || '-' %></td><td><%= item.checked_in_at || '-' %></td><td><%= item.actor_name || item.actor_type %></td><td><%= item.qr_type %></td><td><%= item.status %></td></tr><% }) %>
+  </tbody></table>
+</div></div></div></div>

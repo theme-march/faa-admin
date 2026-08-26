@@ -114,6 +114,12 @@
 <body>
 <div class="container">
     <h1>Event Entry</h1>
+    <% if (!(typeof staffSession !== 'undefined' && staffSession)) { %>
+        <p style="text-align:center;margin:-10px 0 15px;"><a id="staffLoginLink" href="/staff/login">Event staff login</a></p>
+    <% } %>
+    <% if (typeof staffSession !== 'undefined' && staffSession) { %>
+        <p class="message" style="background:#e8f5e9;padding:10px;border-radius:6px;">Staff: <strong><%= staffSession.name %></strong></p>
+    <% } %>
     <% if (participant) { %>
         <% if (requiresPasscode) { %>
             <p class="message"><%= message %></p>
@@ -170,6 +176,10 @@
 </div>
 
 <script>
+    const staffLoginLink = document.getElementById('staffLoginLink');
+    if (staffLoginLink) {
+        staffLoginLink.href = '/staff/login?returnTo=' + encodeURIComponent(location.pathname + location.search);
+    }
     document.getElementById('enterForm')?.addEventListener('submit', async function (e) {
         e.preventDefault();
         var event_id = document.getElementById("event_id").value;

@@ -1,0 +1,21 @@
+<div class="page-header page-header-light"><div class="breadcrumb-line breadcrumb-line-light"><div class="breadcrumb"><a href="/dashboard" class="breadcrumb-item">Dashboard</a><span class="breadcrumb-item active">Event Staff</span></div></div></div>
+<div class="content"><div class="card">
+  <div class="card-header header-elements-inline"><h5 class="card-title">Event Staff Accounts</h5><div><a href="/event-checkins" class="btn btn-outline-primary mr-2">Check-in History</a><a href="/event-staff/add" class="btn btn-primary">Add Staff</a></div></div>
+  <div class="card-body">
+    <% if (messages.error) { %><div class="alert alert-danger"><%= messages.error %></div><% } %>
+    <% if (messages.success) { %><div class="alert alert-success"><%= messages.success %></div><% } %>
+    <div class="table-responsive"><table class="table table-bordered table-striped">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned events</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      <% if (!(staff || []).length) { %><tr><td colspan="7" class="text-center">No staff account found.</td></tr><% } %>
+      <% (staff || []).forEach(function(item){ %><tr>
+        <td><%= item.name %></td><td><%= item.email %></td><td><%= item.role === 'event_manager' ? 'Event Manager' : 'Entry Staff' %></td>
+        <td><%= item.assigned_events || '-' %></td><td><%= item.last_login_at || '-' %></td>
+        <td><span class="badge badge-<%= Number(item.status) === 1 ? 'success' : 'secondary' %>"><%= Number(item.status) === 1 ? 'Active' : 'Disabled' %></span></td>
+        <td class="text-nowrap"><a href="/event-staff/<%= item.id %>/edit" class="btn btn-sm btn-primary">Edit</a>
+          <form action="/event-staff/<%= item.id %>/toggle" method="post" class="d-inline" onsubmit="return confirm('Change this staff account status?')"><button class="btn btn-sm btn-<%= Number(item.status) === 1 ? 'warning' : 'success' %>"><%= Number(item.status) === 1 ? 'Disable' : 'Activate' %></button></form>
+        </td>
+      </tr><% }) %></tbody>
+    </table></div>
+  </div>
+</div></div>

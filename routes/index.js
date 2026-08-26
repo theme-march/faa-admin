@@ -46,6 +46,9 @@ const EnterEvent = require("../controllers/enter_event");
 const eventRegistrationController = require('../controllers/event_registration/EventRegistration');
 const collectionOfPaymentsController = require('../controllers/collection_of_payments/CollectionOfPayments');
 const eventSponsorRegistrationController = require('../controllers/event_sponsor_registration/EventSponsorRegistration');
+const EventStaff = require('../controllers/event_staff');
+const MemberCard = require('../controllers/member_card');
+const { requireAdmin, requireStaff } = require('../middleware/adminStaffAuth');
 
 const footerLogoUploadDir = path.join(__dirname, '../public/uploads/footer-logos');
 if (!fs.existsSync(footerLogoUploadDir)) {
@@ -289,29 +292,49 @@ router.get('/dashboard/metrics', function(req, res, next) {
   }
 });
 
-router.get('/collection-payments', collectionOfPaymentsController.list);
-router.get('/collection-payments-data', collectionOfPaymentsController.getCollectionOfPayments);
-router.get('/collection-payments-excel', collectionOfPaymentsController.downloadExcel);
+router.get('/event-staff', requireAdmin, EventStaff.adminList);
+router.get('/event-staff/add', requireAdmin, EventStaff.adminAddForm);
+router.post('/event-staff/add', requireAdmin, EventStaff.adminCreate);
+router.get('/event-staff/:id/edit', requireAdmin, EventStaff.adminEditForm);
+router.post('/event-staff/:id/edit', requireAdmin, EventStaff.adminUpdate);
+router.post('/event-staff/:id/toggle', requireAdmin, EventStaff.adminToggle);
+router.get('/event-checkins', requireAdmin, EventStaff.adminCheckins);
+
+router.get('/staff/login', EventStaff.loginForm);
+router.post('/staff/login', EventStaff.login);
+router.get('/staff/logout', EventStaff.logout);
+router.get('/staff', requireStaff, EventStaff.portal);
+router.post('/staff/checkin/:id/reverse', requireStaff, EventStaff.reverseCheckin);
+
+router.get('/member/verify/:token', MemberCard.verify);
+router.post('/staff/member-card/checkin', requireStaff, MemberCard.checkin);
+router.get('/member/:id/card-qr', requireAdmin, MemberCard.downloadQr);
+router.post('/member/:id/card-qr/reissue', requireAdmin, MemberCard.reissueQr);
+router.post('/member-card-qr/generate-all', requireAdmin, MemberCard.generateAll);
+
+router.get('/collection-payments', requireAdmin, collectionOfPaymentsController.list);
+router.get('/collection-payments-data', requireAdmin, collectionOfPaymentsController.getCollectionOfPayments);
+router.get('/collection-payments-excel', requireAdmin, collectionOfPaymentsController.downloadExcel);
 
 
-router.get('/event-registration', eventRegistrationController.list);
-router.get('/event-registrations-data', eventRegistrationController.getEventRegistrations);
+router.get('/event-registration', requireAdmin, eventRegistrationController.list);
+router.get('/event-registrations-data', requireAdmin, eventRegistrationController.getEventRegistrations);
 router.get('/event-registration/invoice/:id', eventRegistrationController.downloadInvoice);
-router.post('/event-registration/resend/:id', eventRegistrationController.resendInvoice);
-router.post('/event-registration/reset-entry/:id', eventRegistrationController.resetEntry);
-router.post('/event-registration/bulk-delete', eventRegistrationController.bulkDelete);
-router.post('/event-registration/delete/:id', eventRegistrationController.delete);
-router.post('/event-registration/receive-cash/:id', eventRegistrationController.receiveCash);
-router.get('/event-sponsor-registration', eventSponsorRegistrationController.list);
-router.post('/event-sponsor-registration/data-list', eventSponsorRegistrationController.data_list);
-router.post('/event-sponsor-registration/receive-cash/:id', eventSponsorRegistrationController.receiveCash);
-router.post('/event-sponsor-registration/delete/:id', eventSponsorRegistrationController.delete);
-router.post('/event-sponsor-registration/bulk-delete', eventSponsorRegistrationController.bulkDelete);
-router.get('/event-sponsor-registration/download-excel', eventSponsorRegistrationController.downloadExcel);
+router.post('/event-registration/resend/:id', requireAdmin, eventRegistrationController.resendInvoice);
+router.post('/event-registration/reset-entry/:id', requireAdmin, eventRegistrationController.resetEntry);
+router.post('/event-registration/bulk-delete', requireAdmin, eventRegistrationController.bulkDelete);
+router.post('/event-registration/delete/:id', requireAdmin, eventRegistrationController.delete);
+router.post('/event-registration/receive-cash/:id', requireAdmin, eventRegistrationController.receiveCash);
+router.get('/event-sponsor-registration', requireAdmin, eventSponsorRegistrationController.list);
+router.post('/event-sponsor-registration/data-list', requireAdmin, eventSponsorRegistrationController.data_list);
+router.post('/event-sponsor-registration/receive-cash/:id', requireAdmin, eventSponsorRegistrationController.receiveCash);
+router.post('/event-sponsor-registration/delete/:id', requireAdmin, eventSponsorRegistrationController.delete);
+router.post('/event-sponsor-registration/bulk-delete', requireAdmin, eventSponsorRegistrationController.bulkDelete);
+router.get('/event-sponsor-registration/download-excel', requireAdmin, eventSponsorRegistrationController.downloadExcel);
 router.get('/event/enter', EnterEvent.participantDetails);
 router.post('/event/enter', EnterEvent.updateEnterDateTime);
 router.post('/event/enter/reset', EnterEvent.resetEnterDateTime);
-router.get('/event-registrations-download', eventRegistrationController.downloadExcel);
+router.get('/event-registrations-download', requireAdmin, eventRegistrationController.downloadExcel);
 
 
 router.post('/payment/ipn_url', function(req, res, next) {
@@ -655,7 +678,7 @@ router.post('/members/import_excel', upload.single('file'), async (req, res) => 
   }
 });
 
-router.post('/members/excel_report', Member.excel_report);
+router.post('/members/excel_report', requireAdmin, Member.excel_report);
 
 router.get('/scrolling_news', function(req, res, next) {
   if (isLogin(req, res)) {
@@ -1133,8 +1156,4 @@ module.exports = router;
 router.post('/member/mark_cash_received', Member.mark_cash_received);
 router.post('/member/mark_paid', Member.mark_paid);
 router.post('/member/mark_not_paid', Member.mark_not_paid);
-
-
-
-
 
