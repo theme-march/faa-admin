@@ -182,6 +182,269 @@ exports.expired_members = (req, res, next) => {
   res.render("member/expired_members", {});
 };
 
+const QR_EXPORT_JOINS = `
+  LEFT JOIN (
+    SELECT member_id, 1 AS has_success_payment
+    FROM member_ship_payments
+    WHERE tx_status IN ('VALID', 'CASH_RECEIVED')
+    GROUP BY member_id
+  ) qr_payment ON qr_payment.member_id = ml.id
+  LEFT JOIN (
+    SELECT member_id, COUNT(*) AS pending_cash_requests
+    FROM member_ship_payments
+    WHERE payment_type = 'cash' AND tx_status = 'CASH_PENDING'
+    GROUP BY member_id
+  ) qr_cash ON qr_cash.member_id = ml.id
+  LEFT JOIN (
+    SELECT member_id, COUNT(*) AS active_qr_count
+    FROM member_card_tokens
+    WHERE is_active = 1
+    GROUP BY member_id
+  ) qr_token ON qr_token.member_id = ml.id
+`;
+
+function buildQrExportFilter(input = {}) {
+  const clauses = [];
+  const replacements = {};
+  const labels = [];
+  const memberType = Number.parseInt(input.member_type, 10);
+  const approval = String(input.approval_status || "all").toLowerCase();
+  const memberStatus = String(input.member_status || "all").toLowerCase();
+  const payment = String(input.payment_status || "all").toLowerCase();
+  const session = String(input.session || "all").trim();
+  const qrStatus = String(input.qr_status || "all").toLowerCase();
+
+  if (Number.isFinite(memberType) && memberType > 0) {
+    clauses.push("ml.membership_category_id = :memberType");
+    replacements.memberType = memberType;
+  }
+  if (approval === "approved") {
+    clauses.push("ml.admin_approval = 1");
+    labels.push("Approved");
+  } else if (approval === "not_approved") {
+    clauses.push("COALESCE(ml.admin_approval, 0) <> 1");
+    labels.push("Not approved");
+  }
+  if (memberStatus === "active") {
+    clauses.push("ml.status = 1");
+    labels.push("Active");
+  } else if (memberStatus === "inactive") {
+    clauses.push("COALESCE(ml.status, 0) <> 1");
+    labels.push("Inactive");
+  }
+
+  const paidExpression = "COALESCE(qr_payment.has_success_payment, ml.is_pay, 0)";
+  const pendingExpression = "COALESCE(qr_cash.pending_cash_requests, 0)";
+  if (payment === "paid") {
+    clauses.push(`${paidExpression} = 1`);
+    labels.push("Paid");
+  } else if (payment === "unpaid") {
+    clauses.push(`${paidExpression} <> 1 AND ${pendingExpression} = 0`);
+    labels.push("Unpaid");
+  } else if (payment === "cash_pending") {
+    clauses.push(`${paidExpression} <> 1 AND ${pendingExpression} > 0`);
+    labels.push("Cash pending");
+  }
+  if (session && session.toLowerCase() !== "all") {
+    clauses.push("TRIM(COALESCE(ml.session, '')) = :session");
+    replacements.session = session;
+    labels.push(`Session: ${session}`);
+  }
+  if (qrStatus === "existing") {
+    clauses.push("COALESCE(qr_token.active_qr_count, 0) > 0");
+    labels.push("QR available");
+  } else if (qrStatus === "missing") {
+    clauses.push("COALESCE(qr_token.active_qr_count, 0) = 0");
+    labels.push("QR missing before export");
+  }
+
+  return {
+    whereSql: clauses.length ? `WHERE ${clauses.join(" AND ")}` : "",
+    replacements,
+    labels,
+    hasMemberType: Number.isFinite(memberType) && memberType > 0,
+  };
+}
+
+async function countQrExportMembers(input) {
+  const filters = buildQrExportFilter(input);
+  const rows = await sequelize.query(`
+    SELECT COUNT(*) AS member_count
+    FROM member_list ml
+    LEFT JOIN category_list c ON c.id = ml.membership_category_id
+    ${QR_EXPORT_JOINS}
+    ${filters.whereSql}
+  `, { replacements: filters.replacements, type: QueryTypes.SELECT, logging: false });
+  return Number(rows[0]?.member_count || 0);
+}
+
+exports.qr_export_page = async (req, res, next) => {
+  try {
+    const defaultFilters = { approval_status: "approved", member_status: "active" };
+    const [memberTypes, sessions, selectedCount, allRecordCount] = await Promise.all([
+      sequelize.query(`
+        SELECT id, category_name
+        FROM category_list
+        ORDER BY LOWER(TRIM(COALESCE(category_name, ''))) ASC
+      `, { type: QueryTypes.SELECT }),
+      sequelize.query(`
+        SELECT DISTINCT TRIM(session) AS session
+        FROM member_list
+        WHERE TRIM(COALESCE(session, '')) <> ''
+        ORDER BY TRIM(session) ASC
+      `, { type: QueryTypes.SELECT }),
+      countQrExportMembers(defaultFilters),
+      countQrExportMembers({}),
+    ]);
+
+    return res.render("member/qr_export", {
+      data: { memberTypes, sessions, selectedCount, allRecordCount },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.qr_export_count = async (req, res) => {
+  try {
+    const count = await countQrExportMembers(req.body || {});
+    return res.json({ success: true, count });
+  } catch (error) {
+    console.error("Member QR export count error:", error);
+    return res.status(500).json({ success: false, message: "Unable to calculate matching members." });
+  }
+};
+
+exports.qr_excel_export = async (req, res) => {
+  try {
+    const scope = String(req.body.scope || "filtered").trim().toLowerCase();
+    const filters = buildQrExportFilter(scope === "all" ? {} : req.body);
+    const members = await sequelize.query(`
+      SELECT ml.id, ml.membership_number, ml.name, ml.phone_number, ml.email,
+             ml.session, ml.organization_name, COALESCE(c.category_name, 'Unknown') AS category_name,
+             CASE WHEN ml.admin_approval = 1 THEN 'Approved' ELSE 'Not Approved' END AS approval_label,
+             CASE WHEN ml.status = 1 THEN 'Active' ELSE 'Inactive' END AS status_label,
+             CASE
+               WHEN COALESCE(qr_payment.has_success_payment, ml.is_pay, 0) = 1 THEN 'Paid'
+               WHEN COALESCE(qr_cash.pending_cash_requests, 0) > 0 THEN 'Cash Pending'
+               ELSE 'Unpaid'
+             END AS payment_label
+      FROM member_list ml
+      LEFT JOIN category_list c ON c.id = ml.membership_category_id
+      ${QR_EXPORT_JOINS}
+      ${filters.whereSql}
+      ORDER BY LOWER(TRIM(COALESCE(c.category_name, ''))) ASC,
+               LOWER(TRIM(COALESCE(ml.name, ''))) ASC,
+               ml.id ASC
+    `, { replacements: filters.replacements, type: QueryTypes.SELECT, logging: false });
+
+    if (!members.length) {
+      return res.status(404).json({ success: false, message: "No member matches the selected filters." });
+    }
+
+    const filterLabels = [...filters.labels];
+    if (filters.hasMemberType) filterLabels.unshift(`Type: ${members[0].category_name}`);
+    if (!filterLabels.length) filterLabels.push("All member records");
+    const exportLabel = filterLabels.join(" | ");
+
+    const workbook = new excel.Workbook();
+    workbook.creator = "Finance Alumni Association";
+    workbook.lastModifiedBy = "FAA Admin Panel";
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    workbook.subject = "FAA member records with embedded permanent QR codes";
+
+    const worksheet = workbook.addWorksheet("Members with QR", {
+      properties: { defaultRowHeight: 20 },
+      pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+    worksheet.views = [{ state: "frozen", ySplit: 4, activeCell: "A5" }];
+
+    const widths = [19, 28, 23, 20, 22, 28, 16, 15, 15, 18, 30];
+    widths.forEach((width, index) => { worksheet.getColumn(index + 1).width = width; });
+
+    worksheet.mergeCells("A1:K1");
+    worksheet.getCell("A1").value = "FAA Member QR Export";
+    worksheet.getCell("A1").font = { bold: true, color: { argb: "FFFFFFFF" }, size: 18 };
+    worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
+    worksheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF792F6C" } };
+    worksheet.getRow(1).height = 34;
+
+    worksheet.mergeCells("A2:K2");
+    worksheet.getCell("A2").value = `Generated: ${moment().format("DD MMM YYYY, hh:mm A")} | Members: ${members.length}`;
+    worksheet.getCell("A2").font = { color: { argb: "FF6F626B" }, size: 10 };
+    worksheet.getCell("A2").alignment = { vertical: "middle", horizontal: "left" };
+
+    worksheet.mergeCells("A3:K3");
+    worksheet.getCell("A3").value = `Filters: ${exportLabel}`;
+    worksheet.getCell("A3").font = { italic: true, color: { argb: "FF792F6C" }, size: 10 };
+
+    const headers = [
+      "Membership ID", "Member Name", "Member Type", "Session / Batch", "Phone", "Email",
+      "Approval", "Member Status", "Payment", "QR Image", "Verification Link",
+    ];
+    const headerRow = worksheet.getRow(4);
+    headerRow.values = headers;
+    headerRow.height = 26;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4D1745" } };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FFDBC9D7" } }, left: { style: "thin", color: { argb: "FFDBC9D7" } },
+        bottom: { style: "thin", color: { argb: "FFDBC9D7" } }, right: { style: "thin", color: { argb: "FFDBC9D7" } },
+      };
+    });
+
+    const createdBy = Number(req.session?.user?.id || 0) || null;
+    const tokenMap = await ensureActiveTokensForMembers(members.map((member) => member.id), createdBy);
+    const qrBaseUrl = getMemberQrBaseUrl(req);
+
+    for (const [index, member] of members.entries()) {
+      const token = tokenMap.get(String(member.id));
+      if (!token) throw new Error(`Unable to prepare QR token for member ${member.id}.`);
+      const qrUrl = `${qrBaseUrl}${token.token_value}`;
+      const qrBuffer = await QRCode.toBuffer(qrUrl, { type: "png", width: 320, margin: 3, errorCorrectionLevel: "H" });
+      const rowNumber = index + 5;
+      const row = worksheet.getRow(rowNumber);
+      row.values = [
+        member.membership_number || "", member.name || "", member.category_name || "",
+        member.session || "", member.phone_number || "", member.email || "",
+        member.approval_label, member.status_label, member.payment_label, "",
+        { text: "Open verification page", hyperlink: qrUrl },
+      ];
+      row.height = 82;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.alignment = { vertical: "middle", horizontal: colNumber === 10 ? "center" : "left", wrapText: true };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE8DEE5" } }, left: { style: "thin", color: { argb: "FFE8DEE5" } },
+          bottom: { style: "thin", color: { argb: "FFE8DEE5" } }, right: { style: "thin", color: { argb: "FFE8DEE5" } },
+        };
+        if (index % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFCF9FB" } };
+      });
+      worksheet.getCell(rowNumber, 11).font = { color: { argb: "FF792F6C" }, underline: true, bold: true, size: 10 };
+      const imageId = workbook.addImage({ buffer: qrBuffer, extension: "png" });
+      worksheet.addImage(imageId, { tl: { col: 9.22, row: rowNumber - 0.88 }, ext: { width: 96, height: 96 }, editAs: "oneCell" });
+    }
+
+    worksheet.autoFilter = { from: "A4", to: "K4" };
+    worksheet.getColumn(1).alignment = { vertical: "middle", horizontal: "center" };
+    const safeLabel = String(filterLabels.slice(0, 3).join("_") || "All_Members")
+      .normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "Members";
+    const fileName = `FAA_${safeLabel}_With_Embedded_QR_${moment().format("YYYY-MM-DD")}.xlsx`;
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Length", buffer.length);
+    return res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error("Embedded member QR Excel export error:", error);
+    if (res.headersSent) return res.end();
+    return res.status(500).json({ success: false, message: "Unable to prepare the member QR Excel file. Please try again." });
+  }
+};
+
 exports.data_list = async (req, res, next) => {
   let offset = req.body.start;
   let limit = req.body.length;

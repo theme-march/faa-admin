@@ -685,6 +685,9 @@ router.post('/members/import_excel', upload.single('file'), async (req, res) => 
 });
 
 router.post('/members/excel_report', requireAdmin, Member.excel_report);
+router.get('/member-qr-export', requireAdmin, Member.qr_export_page);
+router.post('/member-qr-export/count', requireAdmin, Member.qr_export_count);
+router.post('/member-qr-export/download', requireAdmin, Member.qr_excel_export);
 
 router.get('/scrolling_news', function(req, res, next) {
   if (isLogin(req, res)) {
