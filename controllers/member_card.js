@@ -1,6 +1,12 @@
 const QRCode = require("qrcode");
 const { QueryTypes } = require("sequelize");
-const { sequelize, MemberModel, MemberCardTokenModel, EventStaffAssignmentModel } = require("../models");
+const {
+  sequelize,
+  MemberModel,
+  MemberCardTokenModel,
+  EventStaffModel,
+  EventStaffAssignmentModel,
+} = require("../models");
 const {
   ensureActiveTokensForMembers,
   findActiveToken,
@@ -16,6 +22,25 @@ const { performEventCheckin } = require("../services/eventCheckin");
 const { registrationBelongsToMember } = require("../services/memberIdentity");
 
 function adminId(req) { return Number(req.session?.user?.id || 0) || null; }
+
+async function getAuthenticatedStaff(req) {
+  const staffId = Number(req.session?.eventStaff?.id || 0);
+  if (!staffId) return null;
+
+  const staff = await EventStaffModel.findOne({
+    where: { id: staffId, status: 1 },
+    attributes: ["id", "name", "email", "role"],
+    raw: true,
+  });
+
+  if (!staff) {
+    delete req.session.eventStaff;
+    return null;
+  }
+
+  req.session.eventStaff = staff;
+  return staff;
+}
 
 exports.downloadQr = async (req, res) => {
   const member = await MemberModel.findByPk(req.params.id);
@@ -170,17 +195,18 @@ exports.generateAll = async (req, res) => {
 
 exports.verify = async (req, res, next) => {
   try {
+    const staff = await getAuthenticatedStaff(req);
     const token = await findActiveToken(req.params.token);
     if (!token) {
       return res.status(404).render("member_card/verify", {
-        layout: false, member: null, registrations: [], staff: req.session?.eventStaff || null,
+        layout: false, member: null, registrations: [], staff,
         message: "This member card QR is invalid or has been revoked.", tokenValue: "",
       });
     }
     await token.update({ last_scanned_at: new Date() });
     const rows = await sequelize.query(`
       SELECT ml.id, ml.name, ml.membership_number, ml.member_image, ml.session, ml.organization_name,
-             ml.email, ml.phone_number,
+             ${staff ? "ml.email, ml.phone_number," : ""}
              ml.admin_approval, ml.is_pay, ml.status, cl.category_name
       FROM member_list ml
       LEFT JOIN category_list cl ON cl.id = ml.membership_category_id
@@ -189,38 +215,38 @@ exports.verify = async (req, res, next) => {
     const member = rows[0];
     if (!member) throw new Error("The member linked to this QR no longer exists.");
 
-    const registrations = await sequelize.query(`
-      SELECT er.id AS registration_id, er.event_id, er.full_name, er.is_pay, er.tx_status,
-             er.enter_date_time, el.event_title, el.event_date, el.event_venue
-      FROM event_register er
-      INNER JOIN event_list el ON el.id = er.event_id
-      WHERE (CAST(er.member_id AS CHAR) = CAST(:memberId AS CHAR)
-             OR CAST(er.member_id AS CHAR) = :membershipNumber
-             OR (:email <> '' AND LOWER(COALESCE(er.email_address, '')) = LOWER(:email))
-             OR (:phoneNumber <> '' AND REPLACE(COALESCE(er.phone_number, ''), ' ', '') = REPLACE(:phoneNumber, ' ', '')))
-        AND (er.is_pay = 1 OR UPPER(COALESCE(er.tx_status, '')) IN ('VALID','VALIDATED','SUCCESS','CASH_RECEIVED'))
-      ORDER BY el.event_date DESC, er.id DESC
-    `, {
-      replacements: {
-        memberId: member.id,
-        membershipNumber: member.membership_number || "",
-        email: member.email || "",
-        phoneNumber: member.phone_number || "",
-      },
-      type: QueryTypes.SELECT,
-    });
-
-    let assigned = new Set();
-    if (req.session?.eventStaff?.id) {
-      const assignments = await EventStaffAssignmentModel.findAll({
-        where: { staff_id: req.session.eventStaff.id }, attributes: ["event_id"], raw: true,
+    let registrations = [];
+    if (staff) {
+      registrations = await sequelize.query(`
+        SELECT er.id AS registration_id, er.event_id, er.full_name, er.is_pay, er.tx_status,
+               er.enter_date_time, el.event_title, el.event_date, el.event_venue
+        FROM event_register er
+        INNER JOIN event_list el ON el.id = er.event_id
+        WHERE (CAST(er.member_id AS CHAR) = CAST(:memberId AS CHAR)
+               OR CAST(er.member_id AS CHAR) = :membershipNumber
+               OR (:email <> '' AND LOWER(COALESCE(er.email_address, '')) = LOWER(:email))
+               OR (:phoneNumber <> '' AND REPLACE(COALESCE(er.phone_number, ''), ' ', '') = REPLACE(:phoneNumber, ' ', '')))
+          AND (er.is_pay = 1 OR UPPER(COALESCE(er.tx_status, '')) IN ('VALID','VALIDATED','SUCCESS','CASH_RECEIVED'))
+        ORDER BY el.event_date DESC, er.id DESC
+      `, {
+        replacements: {
+          memberId: member.id,
+          membershipNumber: member.membership_number || "",
+          email: member.email || "",
+          phoneNumber: member.phone_number || "",
+        },
+        type: QueryTypes.SELECT,
       });
-      assigned = new Set(assignments.map((item) => String(item.event_id)));
+
+      const assignments = await EventStaffAssignmentModel.findAll({
+        where: { staff_id: staff.id }, attributes: ["event_id"], raw: true,
+      });
+      const assigned = new Set(assignments.map((item) => String(item.event_id)));
+      registrations.forEach((row) => { row.can_check_in = assigned.has(String(row.event_id)); });
     }
-    registrations.forEach((row) => { row.can_check_in = assigned.has(String(row.event_id)); });
 
     return res.render("member_card/verify", {
-      layout: false, member, registrations, staff: req.session?.eventStaff || null,
+      layout: false, member, registrations, staff,
       message: "", tokenValue: req.params.token,
     });
   } catch (error) { return next(error); }
