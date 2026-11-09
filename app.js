@@ -53,6 +53,15 @@ function isAllowedOrigin(origin = "") {
     if (hostname === "faa-dubd.org" || hostname.endsWith(".faa-dubd.org")) {
       return true;
     }
+
+    if (
+      hostname === "sslcommerz.com" ||
+      hostname.endsWith(".sslcommerz.com") ||
+      hostname === "sslcommerz.org.bd" ||
+      hostname.endsWith(".sslcommerz.org.bd")
+    ) {
+      return true;
+    }
   } catch (error) {
     return false;
   }
@@ -62,17 +71,32 @@ function isAllowedOrigin(origin = "") {
 
 // Enable CORS for admin API requests coming from the frontend site,
 // local member app, and CMS itself.
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || isAllowedOrigin(origin)) {
-      return callback(null, true);
+app.use((req, res, next) => {
+  // Always permit payment gateway callbacks, redirects, and IPN webhooks
+  if (req.path.startsWith('/payment/')) {
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
     }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+    return next();
+  }
+
+  return cors({
+    origin(origin, callback) {
+      if (!origin || isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+      // Pass null, false rather than throwing an Error so non-CORS requests
+      // or unexpected origins don't crash the server with an unhandled 500 error page.
+      return callback(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })(req, res, next);
+});
 
 app.use("/images", express.static("public"));
 
