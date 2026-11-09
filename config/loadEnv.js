@@ -29,9 +29,8 @@ function loadEnv() {
       ) {
         value = value.slice(1, -1);
       }
-      if (process.env[key] === undefined) {
-        process.env[key] = value;
-      }
+      // Always apply .env values so server updates take immediate effect
+      process.env[key] = value;
     }
   } catch (error) {
     // Ignore error

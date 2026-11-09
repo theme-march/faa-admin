@@ -1,3 +1,4 @@
+require("../config/loadEnv");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
 const { sequelize, MemberCardTokenModel, MemberCardTokenAuditModel } = require("../models");
@@ -12,9 +13,25 @@ function createTokenValue() {
 
 function getMemberQrBaseUrl(req) {
   const configured = String(process.env.MEMBER_CARD_QR_BASE_URL || "").trim();
-  if (configured) return configured.endsWith("/") ? configured : `${configured}/`;
+  const reqHost = String((req && req.get && req.get("host")) || "").toLowerCase();
+  const isLiveRequest = reqHost.includes("faa-dubd.org");
+  const isProduction = process.env.NODE_ENV === "production" || isLiveRequest;
 
-  const siteUrl = String(process.env.FRONTEND_BASE_URL || "https://faa-dubd.org").replace(/\/+$/, "");
+  if (configured) {
+    const isLocalConfig = configured.includes("localhost") || configured.includes("127.0.0.1");
+    // If the server is in production or accessed via a live domain, do not output localhost
+    if (!isProduction || !isLocalConfig) {
+      return configured.endsWith("/") ? configured : `${configured}/`;
+    }
+  }
+
+  const frontendBase = String(process.env.FRONTEND_BASE_URL || "").trim();
+  const siteUrl = (
+    (isProduction && (!frontendBase || frontendBase.includes("localhost") || frontendBase.includes("127.0.0.1")))
+      ? "https://faa-dubd.org"
+      : (frontendBase || "https://faa-dubd.org")
+  ).replace(/\/+$/, "");
+
   return `${siteUrl}/member/verify/`;
 }
 
