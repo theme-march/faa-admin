@@ -1,9 +1,10 @@
-﻿const SSLCommerzPayment = require('sslcommerz-lts')
+const SSLCommerzPayment = require('sslcommerz-lts')
 const { sequelize, DonationModel, MemberShipPaymentModel, EventRegisterModel, EventSponsorModel, MemberModel } = require("../models");
 const { QueryTypes } = require("sequelize");
 const { getPaymentConfig } = require("./payment_settings/PaymentSettings");
 const { sendEventRegistrationInvoice } = require("../services/eventInvoiceMailer");
 const { sendMembershipPaymentInvoice } = require("../services/membershipInvoiceMailer");
+const { getFrontendBaseUrl } = require("../config/loadEnv");
 
 const PAYMENT_SOURCE_PREFIX = {
   membership: "MEM",
@@ -12,14 +13,8 @@ const PAYMENT_SOURCE_PREFIX = {
   event_sponsor: "ESP",
 };
 
-// function getCallbackBaseUrl(req) {
-//   const forwardedProto = req.headers["x-forwarded-proto"];
-//   const protocol = forwardedProto || req.protocol || "http";
-//   return `${protocol}://${req.get("host")}`;
-// }
-
 function getCallbackBaseUrl(paymentConfig) {
-  return normalizeBaseUrl(paymentConfig.site_url) || "https://faa-dubd.org";
+  return normalizeBaseUrl(paymentConfig?.site_url) || getFrontendBaseUrl() || "https://faa-dubd.org";
 }
 
 function normalizeBaseUrl(url) {

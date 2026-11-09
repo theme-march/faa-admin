@@ -1,3 +1,4 @@
+require('./config/loadEnv');
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -33,6 +34,10 @@ const allowedOrigins = new Set([
   "http://139.162.11.50:3001",
   "https://139.162.11.50:3001",
 ]);
+
+if (process.env.FRONTEND_BASE_URL) {
+  allowedOrigins.add(String(process.env.FRONTEND_BASE_URL).trim().replace(/\/+$/, ""));
+}
 
 function isAllowedOrigin(origin = "") {
   if (allowedOrigins.has(origin)) return true;

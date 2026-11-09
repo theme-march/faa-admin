@@ -2,6 +2,7 @@ const { sequelize, EventRegisterModel, EventSponsorModel, DonationModel, MemberM
 const { QueryTypes, Op } = require('sequelize');
 const SSLCommerzPayment = require("sslcommerz-lts");
 const { getPaymentConfig } = require("../payment_settings/PaymentSettings");
+const { getFrontendBaseUrl } = require("../../config/loadEnv");
 
 function normalizeBaseUrl(url) {
   const value = String(url || "").trim();
@@ -12,7 +13,7 @@ function normalizeBaseUrl(url) {
 }
 
 function getCallbackBaseUrl(paymentConfig) {
-  return normalizeBaseUrl(paymentConfig?.site_url) || "https://faa-dubd.org";
+  return normalizeBaseUrl(paymentConfig?.site_url) || getFrontendBaseUrl() || "https://faa-dubd.org";
 }
 
 function getRequestedPaymentType(value) {

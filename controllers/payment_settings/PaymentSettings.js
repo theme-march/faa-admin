@@ -1,4 +1,5 @@
 const { PaymentSettingModel } = require("../../models");
+const { getFrontendBaseUrl } = require("../../config/loadEnv");
 
 const LIVE_FRONTEND_URL = "https://faa-dubd.org";
 const LEGACY_LOCAL_SITE_URLS = new Set([
@@ -7,6 +8,10 @@ const LEGACY_LOCAL_SITE_URLS = new Set([
   "https://localhost:3000",
   "https://localhost:3001",
 ]);
+
+function getEffectiveFrontendUrl() {
+  return getFrontendBaseUrl() || LIVE_FRONTEND_URL;
+}
 
 const DEFAULT_SETTINGS = {
   store_id: "",
@@ -21,11 +26,12 @@ const DEFAULT_SETTINGS = {
 
 function normalizeFrontendSiteUrl(value) {
   const rawValue = String(value || "").trim();
-  if (!rawValue) return LIVE_FRONTEND_URL;
+  const defaultUrl = getEffectiveFrontendUrl();
+  if (!rawValue) return defaultUrl;
 
   const normalized = rawValue.replace(/\/+$/, "");
-  if (LEGACY_LOCAL_SITE_URLS.has(normalized)) {
-    return LIVE_FRONTEND_URL;
+  if (process.env.NODE_ENV === "production" && LEGACY_LOCAL_SITE_URLS.has(normalized)) {
+    return defaultUrl;
   }
 
   return normalized;
@@ -36,8 +42,8 @@ async function getOrCreateSettings() {
 
   if (!settings) {
     settings = await PaymentSettingModel.create(DEFAULT_SETTINGS);
-  } else if (!settings.site_url || LEGACY_LOCAL_SITE_URLS.has(String(settings.site_url).trim())) {
-    await settings.update({ site_url: LIVE_FRONTEND_URL });
+  } else if (!settings.site_url || (process.env.NODE_ENV === "production" && LEGACY_LOCAL_SITE_URLS.has(String(settings.site_url).trim()))) {
+    await settings.update({ site_url: getEffectiveFrontendUrl() });
   }
 
   return settings;
