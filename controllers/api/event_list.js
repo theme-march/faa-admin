@@ -3,10 +3,16 @@ const { QueryTypes, Op } = require('sequelize');
 const SSLCommerzPayment = require("sslcommerz-lts");
 const { getPaymentConfig } = require("../payment_settings/PaymentSettings");
 
-function getCallbackBaseUrl(req) {
-  const forwardedProto = req.headers["x-forwarded-proto"];
-  const protocol = forwardedProto || req.protocol || "http";
-  return `${protocol}://${req.get("host")}`;
+function normalizeBaseUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) {
+    return "";
+  }
+  return value.replace(/\/+$/, "");
+}
+
+function getCallbackBaseUrl(paymentConfig) {
+  return normalizeBaseUrl(paymentConfig?.site_url) || "https://faa-dubd.org";
 }
 
 function getRequestedPaymentType(value) {
@@ -283,11 +289,11 @@ exports.EventSponsorSave  = async (req, res, next) => {
         });
       }
 
-      const callbackBaseUrl = getCallbackBaseUrl(req);
+      const callbackBaseUrl = getCallbackBaseUrl(paymentConfig);
       const data = {
         total_amount: req.body.pay_amount,
         currency: 'BDT',
-        tran_id: eventRegisterInsert.id,
+        tran_id: `ESP-${eventRegisterInsert.id}`,
         success_url: `${callbackBaseUrl}/payment/success`,
         fail_url: `${callbackBaseUrl}/payment/fail`,
         cancel_url: `${callbackBaseUrl}/payment/cancel`,
@@ -507,11 +513,11 @@ let eventDetails = await EventRegisterModel.findOne({
           });
         }
 
-        const callbackBaseUrl = getCallbackBaseUrl(req);
+        const callbackBaseUrl = getCallbackBaseUrl(paymentConfig);
         const data = {
           total_amount: req.body.pay_amount,
           currency: 'BDT',
-          tran_id: eventRegisterInsert.id,
+          tran_id: `EVT-${eventRegisterInsert.id}`,
           success_url: `${callbackBaseUrl}/payment/success`,
           fail_url: `${callbackBaseUrl}/payment/fail`,
           cancel_url: `${callbackBaseUrl}/payment/cancel`,
