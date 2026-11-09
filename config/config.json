@@ -19,7 +19,7 @@
     "username": "root",
     "password": "p^L671!!Ph",
     "database": "faaw_db",
-    "host": "174.138.171.172",
+    "host": "139.162.11.50",
     "port": "3306",
     "dialect": "mysql",
     "timezone": "+06:00"

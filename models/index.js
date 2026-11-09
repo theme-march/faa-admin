@@ -1,11 +1,20 @@
 'use strict';
 
+require('../config/loadEnv');
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
+const baseConfig = require(__dirname + '/../config/config.json')[env] || require(__dirname + '/../config/config.json')['development'];
+const config = {
+  ...baseConfig,
+  host: process.env.DB_HOST || baseConfig.host,
+  database: process.env.DB_NAME || baseConfig.database,
+  username: process.env.DB_USER || baseConfig.username,
+  password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : baseConfig.password,
+  port: process.env.DB_PORT || baseConfig.port,
+};
 const db = {};
 
 let sequelize;
